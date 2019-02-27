@@ -1,4 +1,4 @@
-package rosenberg.mark.com.android_samples;
+package com.backblaze.b2.android.android_samples;
 
 import org.junit.Test;
 
