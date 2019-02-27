@@ -6,6 +6,7 @@ package com.backblaze.b2.client.webApiHttpClient;
 
 import com.backblaze.b2.client.exceptions.B2Exception;
 import com.backblaze.b2.util.B2Preconditions;
+
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
@@ -13,15 +14,16 @@ import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLContexts;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.ssl.SSLContexts;
-import org.apache.http.util.VersionInfo;
+import org.apache.http.util.VersionInfoHC4;
+
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLContext;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This is the default HttpClientFactory implementation.
@@ -49,7 +51,7 @@ public class HttpClientFactoryImpl implements HttpClientFactory {
      * of httpcomponents-client-4.5.2).  So, we do the work once and
      * manually set the userAgent from the resulting constant.
      */
-    private static final String APACHE_HTTP_CLIENT_USER_AGENT = VersionInfo.getUserAgent("Apache-HttpClient",
+    private static final String APACHE_HTTP_CLIENT_USER_AGENT = VersionInfoHC4.getUserAgent("Apache-HttpClient",
             "org.apache.http.client", HttpClientBuilder.class);
 
 

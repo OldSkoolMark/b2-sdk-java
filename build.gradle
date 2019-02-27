@@ -1,10 +1,25 @@
-// Copyright 2017, Backblaze Inc. All Rights Reserved.
-// License https://www.backblaze.com/using_b2_code.html
-
-apply plugin: 'base'
-
-// whenever we're cleaning, delete the top-level build directory.
-clean.doFirst {
-  delete "${rootDir}/build"
+allprojects {
+    repositories {
+        google()
+        jcenter()
+        maven {
+            url 'https://maven.google.com/'
+            name 'Google'
+        }
+    }
 }
-
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+buildscript {
+    repositories {
+        google()
+        jcenter()
+        maven {
+            url 'https://maven.google.com/'
+            name 'Google'
+        }
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:3.2.1'
+        classpath 'com.getkeepsafe.dexcount:dexcount-gradle-plugin:0.8.3'
+    }
+}
