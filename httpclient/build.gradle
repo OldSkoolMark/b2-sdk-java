@@ -10,12 +10,10 @@ project.ext {
 
 apply from: '../common.gradle'
 
-// this implementation is built on httpclient, which needs commons-logging.
 dependencies {
-    // we need the core of the project!
     api project(':core')
     
-    // apache http commons (https://hc.apache.org/httpcomponents-client-ga/httpclient/dependency-info.html)
+    // use apache http client not Android fork
     implementation group: 'org.apache.httpcomponents' , name: 'httpclient-android' , version: '4.3.5.1'
 
 }

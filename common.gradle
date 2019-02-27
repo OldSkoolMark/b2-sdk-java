@@ -1,14 +1,6 @@
 // Copyright 2017, Backblaze Inc. All Rights Reserved.
 // License https://www.backblaze.com/using_b2_code.html
 
-//
-// Before applying this file, you must set the following variables:
-project.ext {
-     pomName = 'Android B2 SDK'
-     pomDescription = 'Android port of B2 Java SDK'
-   }
-//
-
 android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -22,7 +14,6 @@ android {
     useLibrary 'org.apache.http.legacy'
     defaultConfig {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-//        applicationId "com.backblaze.b2sdk.android"
         minSdkVersion 19
         targetSdkVersion 28
     }
@@ -31,11 +22,5 @@ dependencies {
     testImplementation group: 'junit', name: 'junit', version: '4.12'
     testImplementation "org.mockito:mockito-core:1.9.5"
 }
-
-sourceCompatibility = 1.8
-group = "com.backblaze.b2"
-
-project.archivesBaseName = project.ext.pomArtifactId
-
 
 
