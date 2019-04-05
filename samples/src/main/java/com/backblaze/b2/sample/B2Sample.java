@@ -31,7 +31,7 @@ import com.backblaze.b2.client.structures.B2Part;
 import com.backblaze.b2.client.structures.B2UpdateBucketRequest;
 import com.backblaze.b2.client.structures.B2UploadFileRequest;
 import com.backblaze.b2.client.structures.B2UploadListener;
-import com.backblaze.b2.client.webApiHttpClient.B2StorageHttpClientBuilder;
+import com.backblaze.b2.client.httpClient.B2StorageHttpClientBuilder;
 import com.backblaze.b2.util.B2ByteRange;
 import com.backblaze.b2.util.B2ExecutorUtils;
 import com.backblaze.b2.util.B2Preconditions;
@@ -55,13 +55,14 @@ import static com.backblaze.b2.util.B2ExecutorUtils.createThreadFactory;
 public class B2Sample {
 
     private static final String USER_AGENT = "B2Sample";
+    private static final String B2_ACCOUNT_ID = "5efbe16f705d";
+    private static final String B2_APPLICATION_KEY = "K0029bGTWHALrs82EWSk+PbTQRGr35E";
 
     public static void main(String[] args) throws B2Exception {
         PrintWriter writer = new PrintWriter(System.out, true);
 
         final ExecutorService executor = Executors.newFixedThreadPool(10, createThreadFactory("B2Sample-executor-%02d"));
-
-        try (final B2StorageClient client = B2StorageHttpClientBuilder.builder(USER_AGENT).build()) {
+        try (final B2StorageClient client = B2StorageHttpClientBuilder.builder(B2_ACCOUNT_ID, B2_APPLICATION_KEY, USER_AGENT).build()) {
             mainGuts(writer, client, executor);
         } finally {
             B2ExecutorUtils.shutdownAndAwaitTermination(executor, 10, 10);

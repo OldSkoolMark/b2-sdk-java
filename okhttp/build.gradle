@@ -1,0 +1,18 @@
+// Copyright 2017, Backblaze Inc. All Rights Reserved.
+// License https://www.backblaze.com/using_b2_code.html
+apply plugin: 'com.android.library'
+
+project.ext {
+    pomArtifactId = 'b2-sdk-okhttp'
+    pomName = 'B2 SDK for Java for OkHttp'
+    pomDescription = 'OkHttp support for B2 SDK for Java.'
+}
+
+apply from: '../common.gradle'
+
+dependencies {
+    api project(':core')
+    implementation "com.squareup.okhttp3:okhttp:3.12.1"
+    implementation "com.squareup.okhttp3:okhttp-urlconnection:3.12.1"
+    implementation 'org.jetbrains:annotations:15.0'
+}

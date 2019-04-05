@@ -1,7 +1,1 @@
-include ':android_samples'
-// Copyright 2017, Backblaze Inc. All Rights Reserved.
-// License https://www.backblaze.com/using_b2_code.html
-
-include 'core'
-include 'httpclient'
-include 'samples'
+include ':android_sample',':core',':httpclient',':okhttp',':samples'
