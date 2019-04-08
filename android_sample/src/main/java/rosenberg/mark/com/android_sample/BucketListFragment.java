@@ -45,7 +45,6 @@ public class BucketListFragment extends Fragment implements Observer<List<B2Buck
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         mViewModel = ViewModelProviders.of(this).get(BucketListViewModel.class);
-
     }
 
     @Override
@@ -62,10 +61,6 @@ public class BucketListFragment extends Fragment implements Observer<List<B2Buck
         }
         mArrayAdapter.loadBucketItems(bucketItemList);
         mArrayAdapter.notifyDataSetChanged();
-        // list buckets.
-        for (B2Bucket bucket : b2Buckets) {
-            Log.i(TAG, "bucket: " + bucket);
-        }
     }
     private final static String TAG = BucketListFragment.class.getSimpleName();
 }
