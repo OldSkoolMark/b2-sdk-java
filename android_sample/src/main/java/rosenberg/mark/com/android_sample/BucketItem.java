@@ -1,18 +1,14 @@
 package rosenberg.mark.com.android_sample;
 
-// 12/30/15
+import com.backblaze.b2.client.structures.B2Bucket;
+
 public class BucketItem {
 
-    private String name;
+    public final String name;
+    public final String id;
 
-    public BucketItem(String n) {
-        name = n;
-    }
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
+    public BucketItem(B2Bucket bucket) {
+        name = bucket.getBucketName();
+        id = bucket.getBucketId();
     }
 }

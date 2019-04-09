@@ -1,7 +1,6 @@
 package rosenberg.mark.com.android_sample;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +13,7 @@ import java.util.List;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.DefaultItemAnimator;
@@ -50,15 +50,15 @@ public class BucketListFragment extends Fragment implements Observer<List<B2Buck
     @Override
     public void onResume() {
         super.onResume();
-        mViewModel.getAllBuckets().observe(getActivity(),this);
+        FragmentActivity a = getActivity();
+        if( a != null ) {
+            mViewModel.getAllBuckets().observe(a, this);
+        }
     }
 
     @Override
     public void onChanged(List<B2Bucket> b2Buckets) {
-        List<BucketItem> bucketItemList = new ArrayList<>(b2Buckets.size());
-        for( B2Bucket b2Bucket : b2Buckets ){
-            bucketItemList.add(new BucketItem(b2Bucket.getBucketName()));
-        }
+        List<BucketItem> bucketItemList = DisplayModel.bucketItems(b2Buckets);
         mArrayAdapter.loadBucketItems(bucketItemList);
         mArrayAdapter.notifyDataSetChanged();
     }

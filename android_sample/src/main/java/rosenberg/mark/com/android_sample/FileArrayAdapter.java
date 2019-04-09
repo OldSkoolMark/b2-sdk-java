@@ -9,24 +9,27 @@ import java.util.ArrayList;
 import java.util.List;
 
 import androidx.annotation.NonNull;
-import androidx.fragment.app.FragmentActivity;
-import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.RecyclerView;
 
 
-public class BucketArrayAdapter extends RecyclerView.Adapter<BucketArrayAdapter.ViewHolder> {
+public class FileArrayAdapter extends RecyclerView.Adapter<FileArrayAdapter.ViewHolder> {
+    public interface DownloadClickCallback {
+        void onDownloadClick( String b2FileID, String fileName);
+    }
 
     //All methods in this adapter are required for a bare minimum recyclerview adapter
     private int listItemLayout;
-    private List<BucketItem> itemList;
+    private List<FileItem> itemList;
+    private DownloadClickCallback callback;
     // Constructor of the class
-    public BucketArrayAdapter(int layoutId, ArrayList<BucketItem> itemList) {
-        listItemLayout = layoutId;
+    public FileArrayAdapter(int layoutId, ArrayList<FileItem> itemList, DownloadClickCallback callback) {
+        this.listItemLayout = layoutId;
         this.itemList = itemList;
+        this.callback = callback;
     }
 
-    public void loadBucketItems(List<BucketItem> bucketItemList){
-        itemList = bucketItemList;
+    public void loadFileItems(List<FileItem> fileItemList){
+        itemList = fileItemList;
     }
     // get the size of the list
     @Override
@@ -50,22 +53,22 @@ public class BucketArrayAdapter extends RecyclerView.Adapter<BucketArrayAdapter.
         TextView item = holder.item;
         item.setText(itemList.get(listPosition).name);
         item.setTag(itemList.get(listPosition).id);
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String fileName = new StringBuilder(item.getText()).toString();
+                callback.onDownloadClick( (String)item.getTag(), fileName);
+            }
+        });
     }
 
     // Static inner class to initialize the views of rows
-    static class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
-        public final TextView item;
+    static class ViewHolder extends RecyclerView.ViewHolder {
+        public TextView item;
+        public ViewGroup layout;
         public ViewHolder(View itemView) {
             super(itemView);
-            itemView.setOnClickListener(this);
-            item = itemView.findViewById(R.id.bucket_name);
-        }
-        @Override
-        public void onClick(View view) {
-            FileListFragment fragment = FileListFragment.newInstance((String)item.getTag());
-            FragmentTransaction ft = ((FragmentActivity)view.getContext()).getSupportFragmentManager().beginTransaction();
-            ft.replace(R.id.listcontainer, fragment);
-            ft.commit();
+            item = itemView.findViewById(R.id.file_name);
         }
     }
 }
