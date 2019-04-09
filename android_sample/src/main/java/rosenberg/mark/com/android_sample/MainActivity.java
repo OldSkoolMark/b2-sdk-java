@@ -2,9 +2,12 @@ package rosenberg.mark.com.android_sample;
 
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Toast;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
+import com.obsez.android.lib.filechooser.ChooserDialog;
+
+import java.io.File;
 
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentTransaction;
@@ -19,8 +22,18 @@ public class MainActivity extends FragmentActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Here's a Snackbar", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+
+                new ChooserDialog()
+                        .with(MainActivity.this)
+                        .withStartFile(null)
+                        .withChosenListener(new ChooserDialog.Result() {
+                            @Override
+                            public void onChoosePath(String path, File pathFile) {
+                                Toast.makeText(MainActivity.this, "FILE: " + path, Toast.LENGTH_SHORT).show();
+                            }
+                        })
+                        .build()
+                        .show();
             }
         });
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
