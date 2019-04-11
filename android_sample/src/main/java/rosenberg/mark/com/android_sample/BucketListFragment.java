@@ -24,6 +24,8 @@ public class BucketListFragment extends Fragment implements Observer<List<B2Buck
 
     private BucketListViewModel mViewModel;
     private BucketArrayAdapter mArrayAdapter;
+    private View mProgressBar;
+    private RecyclerView mRecyclerView;
 
     public static BucketListFragment newInstance() {
         return new BucketListFragment();
@@ -33,11 +35,12 @@ public class BucketListFragment extends Fragment implements Observer<List<B2Buck
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.bucket_list_fragment, container, false);
+        mProgressBar = v.findViewById(R.id.progressbar);
         mArrayAdapter = new BucketArrayAdapter(R.layout.bucket_item, new ArrayList<>());
-        RecyclerView recyclerView = v.findViewById(R.id.bucket_list);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
-        recyclerView.setItemAnimator(new DefaultItemAnimator());
-        recyclerView.setAdapter(mArrayAdapter);
+        mRecyclerView = v.findViewById(R.id.bucket_list);
+        mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+        mRecyclerView.setItemAnimator(new DefaultItemAnimator());
+        mRecyclerView.setAdapter(mArrayAdapter);
         return v;
     }
 
@@ -50,6 +53,8 @@ public class BucketListFragment extends Fragment implements Observer<List<B2Buck
     @Override
     public void onResume() {
         super.onResume();
+        mProgressBar.setVisibility(View.VISIBLE);
+        mRecyclerView.setVisibility(View.GONE);
         FragmentActivity a = getActivity();
         if( a != null ) {
             mViewModel.getAllBuckets().observe(a, this);
@@ -59,6 +64,10 @@ public class BucketListFragment extends Fragment implements Observer<List<B2Buck
     @Override
     public void onChanged(List<B2Bucket> b2Buckets) {
         List<BucketItem> bucketItemList = DisplayModel.bucketItems(b2Buckets);
+        if( bucketItemList.size() > 0){
+            mProgressBar.setVisibility(View.GONE);
+            mRecyclerView.setVisibility(View.VISIBLE);
+        }
         mArrayAdapter.loadBucketItems(bucketItemList);
         mArrayAdapter.notifyDataSetChanged();
     }

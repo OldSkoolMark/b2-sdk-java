@@ -16,10 +16,11 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import static rosenberg.mark.com.android_sample.B2Service.B2_ACCOUNT_ID;
+import static rosenberg.mark.com.android_sample.B2Service.B2_APPLICATION_KEY;
+import static rosenberg.mark.com.android_sample.B2Service.USER_AGENT;
+
 public class FileListViewModel extends ViewModel {
-    private static final String USER_AGENT = "B2Sample";
-    private static final String B2_ACCOUNT_ID = "5efbe16f705d";
-    private static final String B2_APPLICATION_KEY = "002eb586f79285b73bcb82720e2335ed327d2dc198";
     MutableLiveData<List<B2FileVersion>> fileList;
     public LiveData<List<B2FileVersion>> getAllFiles(String bucketID){
         fileList = fileList != null ? fileList : new MutableLiveData<>();
