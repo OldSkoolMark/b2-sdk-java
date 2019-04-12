@@ -4,6 +4,8 @@
  */
 package com.backblaze.b2.client.okHttpClient;
 
+import android.util.Log;
+
 import com.backblaze.b2.client.contentHandlers.B2ContentSink;
 import com.backblaze.b2.client.contentSources.B2Headers;
 import com.backblaze.b2.client.contentSources.B2HeadersImpl;
@@ -219,6 +221,22 @@ public class B2OkHttpClientImpl implements B2WebApiClient {
 
     }
 
+    private byte[] readFully(InputStream inputStream, int contentLength) throws IOException{
+        int numRead = 0;
+        int offset = 0;
+        int length = contentLength;
+        byte[] bytes = new byte[(int)contentLength];
+        while( numRead < contentLength ){
+            int n = inputStream.read(bytes, offset, length);
+            if( n > -1 ){
+                numRead += n;
+                offset += n;
+                length = contentLength - numRead;
+            }
+        }
+        return bytes;
+    }
+
     /**
      * POSTs to a web service that returns content, and returns the content
      * as a single string.
@@ -231,9 +249,9 @@ public class B2OkHttpClientImpl implements B2WebApiClient {
      */
     private @Nullable String postAndReturnString(@NotNull String url, @Nullable B2Headers headersOrNull, @NotNull InputStream inputStream, long contentLength)
             throws B2Exception {
-        byte[] bytes = new byte[(int)contentLength];
+        byte[] bytes;
         try {
-            inputStream.read(bytes, 0, (int)contentLength);
+            bytes = readFully(inputStream, (int)contentLength);
         } catch (IOException e) {
             throw translateToB2Exception(e, url);
         }
