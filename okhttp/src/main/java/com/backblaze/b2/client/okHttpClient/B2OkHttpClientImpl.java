@@ -225,7 +225,7 @@ public class B2OkHttpClientImpl implements B2WebApiClient {
         int numRead = 0;
         int offset = 0;
         int length = contentLength;
-        byte[] bytes = new byte[(int)contentLength];
+        byte[] bytes = new byte[contentLength];
         while( numRead < contentLength ){
             int n = inputStream.read(bytes, offset, length);
             if( n > -1 ){
