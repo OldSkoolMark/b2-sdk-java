@@ -20,7 +20,7 @@ import java.util.function.Supplier;
 
 public class B2StorageOkHttpClientBuilder {
 
-    private static final String DEFAULT_MASTER_URL = "https://api.backblazeb2.com/";
+    private static final String PRODUCTION_MASTER_URL = "https://api.backblazeb2.com/";
     private static final String STAGING_MASTER_URL = "https://api.backblazeb2.net/";
     private final B2ClientConfig config;
     private Supplier<B2RetryPolicy> retryPolicySupplier;
@@ -50,7 +50,7 @@ public class B2StorageOkHttpClientBuilder {
         final B2StorageClientWebifier webifier = new B2StorageClientWebifierImpl(
                 webApiClient,
                 config.getUserAgent() + " " + B2Sdk.getName() + "/" + B2Sdk.getVersion(),
-                (config.getMasterUrl() == null) ? STAGING_MASTER_URL : config.getMasterUrl(),
+                (config.getMasterUrl() == null) ? PRODUCTION_MASTER_URL : config.getMasterUrl(),
                 config.getTestModeOrNull());
         final Supplier<B2RetryPolicy> retryPolicySupplier = (this.retryPolicySupplier != null) ?
                 this.retryPolicySupplier :

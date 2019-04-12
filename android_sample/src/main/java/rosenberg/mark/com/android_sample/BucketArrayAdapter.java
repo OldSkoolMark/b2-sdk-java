@@ -40,8 +40,7 @@ public class BucketArrayAdapter extends RecyclerView.Adapter<BucketArrayAdapter.
     public @NonNull
     ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(listItemLayout, parent, false);
-        ViewHolder myViewHolder = new ViewHolder(view);
-        return myViewHolder;
+        return new ViewHolder(view);
     }
 
     // load data in each row element
@@ -65,6 +64,7 @@ public class BucketArrayAdapter extends RecyclerView.Adapter<BucketArrayAdapter.
             FileListFragment fragment = FileListFragment.newInstance((String)item.getTag());
             FragmentTransaction ft = ((FragmentActivity)view.getContext()).getSupportFragmentManager().beginTransaction();
             ft.replace(R.id.listcontainer, fragment);
+            ft.addToBackStack(null);
             ft.commit();
         }
     }

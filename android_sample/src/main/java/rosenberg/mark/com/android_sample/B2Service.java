@@ -29,11 +29,11 @@ public class B2Service extends IntentService {
 
     public static final String USER_AGENT = "B2 Android Sample";
     // production
-//    public static final String B2_ACCOUNT_ID = "5efbe16f705d";
-//    public static final String B2_APPLICATION_KEY = "002eb586f79285b73bcb82720e2335ed327d2dc198";
+    public static final String B2_ACCOUNT_ID = "5efbe16f705d";
+    public static final String B2_APPLICATION_KEY = "002eb586f79285b73bcb82720e2335ed327d2dc198";
     // staging
-    public static final String B2_ACCOUNT_ID = "b20462956ffb";
-    public static final String B2_APPLICATION_KEY = "9006552ce81ca941079aaccec9a4800f90523892d2";
+//    public static final String B2_ACCOUNT_ID = "b20462956ffb";
+//    public static final String B2_APPLICATION_KEY = "9006552ce81ca941079aaccec9a4800f90523892d2";
 
     private static final String ACTION_DOWNLOAD = "rosenberg.mark.com.android_sample.action.DOWNLOAD";
     private static final String ACTION_UPLOAD = "rosenberg.mark.com.android_sample.action.UPLOAD";
@@ -103,6 +103,7 @@ public class B2Service extends IntentService {
             final B2ContentSource source  = B2FileContentSource.builder(localFile).build();
             // remove leading / to make B2 happy
             final String fileName = localFilePath.startsWith("/") ? localFilePath.substring(1) : localFilePath; // todo: don't store path?
+            Log.i(TAG,"bucketID: "+bucketID+" filename: "+fileName);
             B2UploadFileRequest request = B2UploadFileRequest
                     .builder(bucketID, fileName, B2ContentTypes.B2_AUTO, source)
                     .setListener(new B2UploadListener() {
@@ -130,9 +131,8 @@ public class B2Service extends IntentService {
     /**
      * Create Sha1 hash for file.
      * @param filepath local file path
-     * @param md SHA1 message digest
      * @return SHA1 hash
-     * @throws IOException
+     * @throws IOException on read error
      */
     private static String getFileSHA1(String filepath) throws IOException, NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("SHA-1");
