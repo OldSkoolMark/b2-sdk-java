@@ -18,13 +18,14 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scrollbars="vertical"
+        android:padding="4dp"
         />
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="end|bottom"
-        app:srcCompat="@drawable/ic_cloud_upload_24px"
+        app:srcCompat="@drawable/ic_outline_cloud_upload_24px"
         android:layout_marginRight="48dp"
         android:layout_marginBottom="96dp" />
 

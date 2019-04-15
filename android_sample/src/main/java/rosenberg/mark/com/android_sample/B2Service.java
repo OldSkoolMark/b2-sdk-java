@@ -90,7 +90,8 @@ public class B2Service extends IntentService {
         }
     }
 
-    private File createDestinationFile(String fileName){
+    private File createDestinationFile(String b2FileName){
+        String fileName = b2FileName.contains("/") ? b2FileName.substring(b2FileName.lastIndexOf("/")) : b2FileName;
         File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName);
         return file;
     }
@@ -99,7 +100,6 @@ public class B2Service extends IntentService {
         try (final B2StorageClient client = B2StorageOkHttpClientBuilder.builder(B2_ACCOUNT_ID, B2_APPLICATION_KEY, USER_AGENT).build()) {
             final File localFile = new File(localFilePath);
             final String sha1 = getFileSHA1(localFilePath);
-            //final B2ContentSource source  = B2FileContentSource.builder(localFile).setSha1(sha1).build();
             final B2ContentSource source  = B2FileContentSource.builder(localFile).build();
             // remove leading / to make B2 happy
             final String fileName = localFilePath.startsWith("/") ? localFilePath.substring(1) : localFilePath; // todo: don't store path?
