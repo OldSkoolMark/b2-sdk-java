@@ -34,6 +34,7 @@ import java.net.UnknownHostException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.Headers;
@@ -42,11 +43,17 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
+import okio.Buffer;
+import okio.BufferedSource;
+import okio.ForwardingSource;
+import okio.Okio;
+import okio.Source;
 
 public class B2OkHttpClientImpl implements B2WebApiClient {
     private static final int DEFAULT_CONNECTION_REQUEST_TIMEOUT_SECONDS = 5;
     private static final int DEFAULT_CONNECT_TIMEOUT_SECONDS = 5;
-    private static final int DEFAULT_SOCKET_TIMEOUT_SECONDS = 20;
+    private static final int DEFAULT_SOCKET_TIMEOUT_SECONDS = 300;
 
     private static final int DEFAULT_MAX_TOTAL_CONNECTIONS_IN_POOL = 100;
     private static final int DEFAULT_MAX_CONNECTIONS_PER_ROUTE = 100;
@@ -65,6 +72,10 @@ public class B2OkHttpClientImpl implements B2WebApiClient {
     private B2OkHttpClientImpl() {
         if( okHttpClient == null) {
             OkHttpClient.Builder builder = new OkHttpClient.Builder()
+                    .addNetworkInterceptor(chain -> {
+                        Response originalResponse = chain.proceed(chain.request());
+                        return maybeDecorateResponse(originalResponse);
+                    })
                     .connectTimeout(DEFAULT_CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                     .writeTimeout(DEFAULT_SOCKET_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                     .callTimeout(DEFAULT_SOCKET_TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -73,6 +84,103 @@ public class B2OkHttpClientImpl implements B2WebApiClient {
         }
     }
 
+    private Response maybeDecorateResponse( Response originalResponse ){
+        Request request = originalResponse.request();
+        if( request.method().equalsIgnoreCase("GET")
+                && request.url().toString().contains("b2_download_file")){
+            String b2FileID = request.url().queryParameter("fileId");
+            return originalResponse.newBuilder()
+                    .body(new ProgressResponseBody(originalResponse.body(), progressListener, b2FileID))
+                    .build();
+        } else {
+            return originalResponse;
+        }
+
+    }
+
+    private final ProgressListener progressListener = new ProgressListener() {
+        boolean firstUpdate = true;
+
+        @Override public void update(final String b2FileID, long bytesRead, long contentLength, boolean done) {
+            if (done) {
+                Log.i(TAG, "progress: done");
+            } else {
+                if (firstUpdate) {
+                    firstUpdate = false;
+                    if (contentLength == -1) {
+                        Log.i(TAG,"progress: content-length: unknown");
+                    } else {
+                        Log.i(TAG, "progress: "+String.format("content-length: %d\n", contentLength));
+                    }
+                }
+
+                Log.i(TAG,"progress: "+bytesRead);
+                if (contentLength != -1) {
+                    maybeBroadcastProgress(b2FileID, bytesRead, contentLength, done);
+                   Log.i(TAG,"progress: "+String.format("%d%% done\n", (100 * bytesRead) / contentLength));
+                }
+            }
+        }
+    };
+    private final Map<String, Long> progressMap = new ConcurrentHashMap<>();
+    private void maybeBroadcastProgress(String b2FileID, long bytesRead, long contentLength, boolean done) {
+        Long lastPercentProgress = progressMap.get(b2FileID) ;
+        lastPercentProgress = lastPercentProgress == null ? 0 : lastPercentProgress;
+        long currentProgress = (100*bytesRead)/contentLength;
+        if( done ) {
+            progressMap.remove(b2FileID);
+        } else if( currentProgress - lastPercentProgress > 5){
+
+        }
+        progressMap.put(b2FileID, currentProgress);
+    }
+
+    private static class ProgressResponseBody extends ResponseBody {
+
+        private final ResponseBody responseBody;
+        private final ProgressListener progressListener;
+        private BufferedSource bufferedSource;
+        private final String b2FileID;
+
+        ProgressResponseBody(ResponseBody responseBody, ProgressListener progressListener, String b2FileID) {
+            this.responseBody = responseBody;
+            this.progressListener = progressListener;
+            this.b2FileID = b2FileID;
+        }
+
+        @Override public MediaType contentType() {
+            return responseBody.contentType();
+        }
+
+        @Override public long contentLength() {
+            return responseBody.contentLength();
+        }
+
+        @Override public BufferedSource source() {
+            if (bufferedSource == null) {
+                bufferedSource = Okio.buffer(source(responseBody.source()));
+            }
+            return bufferedSource;
+        }
+
+        private Source source(Source source) {
+            return new ForwardingSource(source) {
+                long totalBytesRead = 0L;
+
+                @Override public long read(Buffer sink, long byteCount) throws IOException {
+                    long bytesRead = super.read(sink, byteCount);
+                    // read() returns the number of bytes read, or -1 if this source is exhausted.
+                    totalBytesRead += bytesRead != -1 ? bytesRead : 0;
+                    progressListener.update(b2FileID, totalBytesRead, responseBody.contentLength(), bytesRead == -1);
+                    return bytesRead;
+                }
+            };
+        }
+    }
+
+    interface ProgressListener {
+        void update(String b2FileID, long bytesRead, long contentLength, boolean done);
+    }
 
     @Override
     public <ResponseType> ResponseType postJsonReturnJson(String url,

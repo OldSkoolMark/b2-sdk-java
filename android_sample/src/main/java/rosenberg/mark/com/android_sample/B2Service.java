@@ -25,6 +25,13 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
+import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.FILEID;
+import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.FILENAME;
+import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.NUMBYTES;
+import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.TOTALBYTES;
+
 public class B2Service extends IntentService {
 
     public static final String USER_AGENT = "B2 Android Sample";
@@ -80,7 +87,7 @@ public class B2Service extends IntentService {
     }
 
 
-    private void handleDownload(String fileID, String fileName) {
+    private void handleDownload(final String fileID, final String fileName) {
         try (final B2StorageClient client = B2StorageOkHttpClientBuilder.builder(B2_ACCOUNT_ID, B2_APPLICATION_KEY, USER_AGENT).build()) {
             File file = createDestinationFile(fileName);
             B2ContentFileWriter sink = B2ContentFileWriter.builder(file).build();
@@ -89,6 +96,17 @@ public class B2Service extends IntentService {
             Log.e(TAG, "handleDownload() failed: " + e.getMessage());
         }
     }
+    public final static String BROADCAST_FILE_DOWNLOAD_PROGRESS = "downloadprogress";
+    public enum ProgressExtraKeys{ FILEID, FILENAME, NUMBYTES, TOTALBYTES};
+    private void broadcastProgress(String fileID, String fileName, long numBytes, long totalBytes) {
+        Intent intent = new Intent(BROADCAST_FILE_DOWNLOAD_PROGRESS);
+        intent.putExtra(FILEID.name(), fileID);
+        intent.putExtra(FILENAME.name(), fileName);
+        intent.putExtra(NUMBYTES.name(), numBytes);
+        intent.putExtra(TOTALBYTES.name(), totalBytes);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+    }
+
 
     private File createDestinationFile(String b2FileName){
         String fileName = b2FileName.contains("/") ? b2FileName.substring(b2FileName.lastIndexOf("/")) : b2FileName;

@@ -16,7 +16,6 @@
             android:layout_alignParentLeft="true"
             android:gravity="center_vertical"
             android:layout_height="50dp" />
-        <!--
         <ProgressBar
             android:id="@+id/progress_bar"
             android:layout_width="match_parent"
@@ -27,7 +26,6 @@
             style="@android:style/Widget.ProgressBar.Horizontal"
             android:visibility="gone"
             />
-        -->
         <ImageView
             android:id="@+id/download_button"
             app:srcCompat="@drawable/ic_outline_cloud_download_24px"

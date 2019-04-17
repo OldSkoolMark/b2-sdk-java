@@ -1,9 +1,14 @@
 package rosenberg.mark.com.android_sample;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,9 +30,16 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import static rosenberg.mark.com.android_sample.B2Service.BROADCAST_FILE_DOWNLOAD_PROGRESS;
+import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.FILEID;
+import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.FILENAME;
+import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.NUMBYTES;
+import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.TOTALBYTES;
 
 public class FileListFragment extends Fragment
         implements Observer<List<B2FileVersion>> ,
@@ -40,6 +52,17 @@ public class FileListFragment extends Fragment
     private View mProgressBar;
     private FloatingActionButton mFab;
     private RecyclerView mRecyclerView;
+    private BroadcastReceiver mDownloadProgressBroadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String fileID = intent.getStringExtra(FILEID.name());
+            String fileName = intent.getStringExtra(FILENAME.name());
+            long numBytes = intent.getLongExtra(NUMBYTES.name(), -1);
+            long totalBytes = intent.getLongExtra(TOTALBYTES.name(), -1);
+            Log.i(TAG,"received progress broadcast "+numBytes +"/"+totalBytes);
+            mArrayAdapter.updateDownloadProgress(fileID, fileName, numBytes, totalBytes);
+        }
+    };
 
     public static FileListFragment newInstance(final String bucketID) {
         final FileListFragment me = new FileListFragment();
@@ -54,6 +77,15 @@ public class FileListFragment extends Fragment
         super.onCreate(savedInstanceState);
         Bundle b = getArguments();
         mBucketID = b != null ? b.getString(BUCKET_ID_KEY) : null;
+        LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mDownloadProgressBroadcastReceiver,
+                new IntentFilter(BROADCAST_FILE_DOWNLOAD_PROGRESS));
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mDownloadProgressBroadcastReceiver,
+                new IntentFilter(BROADCAST_FILE_DOWNLOAD_PROGRESS));
     }
 
     @Override
