@@ -24,6 +24,7 @@ public class B2StorageOkHttpClientBuilder {
     private static final String STAGING_MASTER_URL = "https://api.backblazeb2.net/";
     private final B2ClientConfig config;
     private Supplier<B2RetryPolicy> retryPolicySupplier;
+    private B2OkHttpClientImpl.ProgressListener progressListener;
 
     @SuppressWarnings("WeakerAccess")
     public static B2StorageOkHttpClientBuilder builder(B2ClientConfig config) {
@@ -41,12 +42,20 @@ public class B2StorageOkHttpClientBuilder {
         return builder(config);
     }
 
+    public B2StorageOkHttpClientBuilder progressListener(B2OkHttpClientImpl.ProgressListener progressListener){
+        this.progressListener = progressListener;
+        return this;
+    }
     private B2StorageOkHttpClientBuilder(B2ClientConfig config) {
         this.config = config;
     }
 
     public B2StorageClient build() {
-        final B2WebApiClient webApiClient = B2OkHttpClientImpl.getInstance();
+        B2OkHttpClientImpl clientImpl = new B2OkHttpClientImpl();
+        if( progressListener != null) {
+            clientImpl.setProgressListener(progressListener);
+        }
+        final B2WebApiClient webApiClient = clientImpl;
         final B2StorageClientWebifier webifier = new B2StorageClientWebifierImpl(
                 webApiClient,
                 config.getUserAgent() + " " + B2Sdk.getName() + "/" + B2Sdk.getVersion(),

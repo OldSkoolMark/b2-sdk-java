@@ -63,13 +63,13 @@ public class B2OkHttpClientImpl implements B2WebApiClient {
     private final B2Json bzJson = B2Json.get();
     private OkHttpClient okHttpClient = null;
     private static B2OkHttpClientImpl instance = null;
+    private ProgressListener progressListener = null;
 
-    public static B2OkHttpClientImpl getInstance(){
-        instance = instance != null ? instance : new B2OkHttpClientImpl();
-        return instance;
+    public void setProgressListener(ProgressListener progressListener){
+        this.progressListener = progressListener;
     }
 
-    private B2OkHttpClientImpl() {
+    public B2OkHttpClientImpl() {
         if( okHttpClient == null) {
             OkHttpClient.Builder builder = new OkHttpClient.Builder()
                     .addNetworkInterceptor(chain -> {
@@ -85,54 +85,20 @@ public class B2OkHttpClientImpl implements B2WebApiClient {
     }
 
     private Response maybeDecorateResponse( Response originalResponse ){
-        Request request = originalResponse.request();
-        if( request.method().equalsIgnoreCase("GET")
-                && request.url().toString().contains("b2_download_file")){
-            String b2FileID = request.url().queryParameter("fileId");
-            return originalResponse.newBuilder()
-                    .body(new ProgressResponseBody(originalResponse.body(), progressListener, b2FileID))
-                    .build();
-        } else {
+        if( progressListener == null){
             return originalResponse;
-        }
-
-    }
-
-    private final ProgressListener progressListener = new ProgressListener() {
-        boolean firstUpdate = true;
-
-        @Override public void update(final String b2FileID, long bytesRead, long contentLength, boolean done) {
-            if (done) {
-                Log.i(TAG, "progress: done");
+        } else {
+            Request request = originalResponse.request();
+            if (request.method().equalsIgnoreCase("GET")
+                    && request.url().toString().contains("b2_download_file")) {
+                String b2FileID = request.url().queryParameter("fileId");
+                return originalResponse.newBuilder()
+                        .body(new ProgressResponseBody(originalResponse.body(), progressListener, b2FileID))
+                        .build();
             } else {
-                if (firstUpdate) {
-                    firstUpdate = false;
-                    if (contentLength == -1) {
-                        Log.i(TAG,"progress: content-length: unknown");
-                    } else {
-                        Log.i(TAG, "progress: "+String.format("content-length: %d\n", contentLength));
-                    }
-                }
-
-                Log.i(TAG,"progress: "+bytesRead);
-                if (contentLength != -1) {
-                    maybeBroadcastProgress(b2FileID, bytesRead, contentLength, done);
-                   Log.i(TAG,"progress: "+String.format("%d%% done\n", (100 * bytesRead) / contentLength));
-                }
+                return originalResponse;
             }
         }
-    };
-    private final Map<String, Long> progressMap = new ConcurrentHashMap<>();
-    private void maybeBroadcastProgress(String b2FileID, long bytesRead, long contentLength, boolean done) {
-        Long lastPercentProgress = progressMap.get(b2FileID) ;
-        lastPercentProgress = lastPercentProgress == null ? 0 : lastPercentProgress;
-        long currentProgress = (100*bytesRead)/contentLength;
-        if( done ) {
-            progressMap.remove(b2FileID);
-        } else if( currentProgress - lastPercentProgress > 5){
-
-        }
-        progressMap.put(b2FileID, currentProgress);
     }
 
     private static class ProgressResponseBody extends ResponseBody {
@@ -178,7 +144,7 @@ public class B2OkHttpClientImpl implements B2WebApiClient {
         }
     }
 
-    interface ProgressListener {
+    public interface ProgressListener {
         void update(String b2FileID, long bytesRead, long contentLength, boolean done);
     }
 
