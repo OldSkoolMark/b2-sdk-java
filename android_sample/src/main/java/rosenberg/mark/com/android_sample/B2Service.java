@@ -25,8 +25,6 @@ import java.io.IOException;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
@@ -91,16 +89,22 @@ public class B2Service extends IntentService {
 
 
     private void handleDownload(final String fileID, final String fileName) {
+        lastPercentProgress = 0;
         try (final B2StorageClient client = B2StorageOkHttpClientBuilder.builder(B2_ACCOUNT_ID, B2_APPLICATION_KEY, USER_AGENT)
                 .progressListener(progressListener)
                 .build()) {
             File file = createDestinationFile(fileName);
+            Log.i(TAG,"downloading to:" +file.getAbsolutePath());
             B2ContentFileWriter sink = B2ContentFileWriter.builder(file).build();
             client.downloadById(fileID, sink);
         } catch (Exception e) {
             Log.e(TAG, "handleDownload() failed: " + e.getMessage());
         }
     }
+
+    /*
+     * Download progress via OKHttp progress listener and local brodcast
+     */
     public final static String BROADCAST_FILE_DOWNLOAD_PROGRESS = "downloadprogress";
     public enum ProgressExtraKeys{ FILEID, DONE, PERCENTCOMPLETE, CONTENTLENGTH};
     private void broadcastProgress(String fileID, long percentComplete, long contentLength, boolean done) {
@@ -124,19 +128,22 @@ public class B2Service extends IntentService {
             }
         }
     };
-    private final Map<String, Long> progressMap = new ConcurrentHashMap<>();
+
+    private long lastPercentProgress;
+
     private void maybeBroadcastProgress(String b2FileID, long bytesRead, long contentLength, boolean done) {
-        Long lastPercentProgress = progressMap.get(b2FileID) ;
-        lastPercentProgress = lastPercentProgress == null ? 0 : lastPercentProgress;
         long currentProgress = (100*bytesRead)/contentLength;
         if( done ) {
-            progressMap.remove(b2FileID);
             broadcastProgress(b2FileID, 100, contentLength, true);
         } else if(currentProgress - lastPercentProgress > 5){
             broadcastProgress(b2FileID, currentProgress, contentLength, done);
-            progressMap.put(b2FileID, currentProgress);
+            lastPercentProgress = currentProgress;
         }
     }
+
+    /*
+     * Upload
+     */
     private File createDestinationFile(String b2FileName){
         String fileName = b2FileName.contains("/") ? b2FileName.substring(b2FileName.lastIndexOf("/")) : b2FileName;
         File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName);
