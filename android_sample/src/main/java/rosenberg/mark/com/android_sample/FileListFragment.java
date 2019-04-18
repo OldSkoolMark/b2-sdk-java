@@ -37,9 +37,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import static rosenberg.mark.com.android_sample.B2Service.BROADCAST_FILE_DOWNLOAD_PROGRESS;
 import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.FILEID;
-import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.FILENAME;
-import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.NUMBYTES;
-import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.TOTALBYTES;
+import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.DONE;
+import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.PERCENTCOMPLETE;
+import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.CONTENTLENGTH;
 
 public class FileListFragment extends Fragment
         implements Observer<List<B2FileVersion>> ,
@@ -56,11 +56,11 @@ public class FileListFragment extends Fragment
         @Override
         public void onReceive(Context context, Intent intent) {
             String fileID = intent.getStringExtra(FILEID.name());
-            String fileName = intent.getStringExtra(FILENAME.name());
-            long numBytes = intent.getLongExtra(NUMBYTES.name(), -1);
-            long totalBytes = intent.getLongExtra(TOTALBYTES.name(), -1);
-            Log.i(TAG,"received progress broadcast "+numBytes +"/"+totalBytes);
-            mArrayAdapter.updateDownloadProgress(fileID, fileName, numBytes, totalBytes);
+            boolean done = intent.getBooleanExtra(DONE.name(), false);
+            long percentComplete = intent.getLongExtra(PERCENTCOMPLETE.name(), -1);
+            long contentLength = intent.getLongExtra(CONTENTLENGTH.name(), -1);
+            Log.i(TAG, "%complete "+percentComplete);
+            mArrayAdapter.updateDownloadProgress(fileID, percentComplete, contentLength, done);
         }
     };
 

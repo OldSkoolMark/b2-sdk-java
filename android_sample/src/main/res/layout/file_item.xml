@@ -16,6 +16,7 @@
             android:layout_alignParentLeft="true"
             android:gravity="center_vertical"
             android:layout_height="50dp" />
+        <!-- determinate progress once the download starts -->
         <ProgressBar
             android:id="@+id/progress_bar"
             android:layout_width="match_parent"
@@ -33,5 +34,13 @@
             android:layout_height="wrap_content"
             android:layout_alignParentRight="true"
             android:layout_centerInParent="true"/>
+        <ProgressBar
+            android:id="@+id/starting_progress_bar"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_alignParentRight="true"
+            android:layout_centerInParent="true"
+            android:visibility="gone"/>
+
     </RelativeLayout>
 </androidx.cardview.widget.CardView>

@@ -1,10 +1,10 @@
 package rosenberg.mark.com.android_sample;
 
-import android.content.BroadcastReceiver;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -47,11 +47,9 @@ public class FileArrayAdapter extends RecyclerView.Adapter<FileArrayAdapter.View
         itemList.addAll(fileItemList);
     }
 
-    public void updateDownloadProgress(String b2FileID, String fileName, long numBytes, long totalBytes){
-        float numerator = (float)numBytes;
-        float denominator = (float)totalBytes;
-        percentComplete = Math.round(numerator/denominator);
-        b2FileIDdownloading = b2FileID;
+    public void updateDownloadProgress(String b2FileID, long percentComplete, long contentLength, boolean done){
+        this.percentComplete = done ? 100 : (int)percentComplete;
+        this.b2FileIDdownloading = b2FileID;
         notifyDataSetChanged();
     }
 
@@ -78,17 +76,19 @@ public class FileArrayAdapter extends RecyclerView.Adapter<FileArrayAdapter.View
         textView.setText(itemList.get(listPosition).name);
         textView.setTag(b2FileID);
         if( b2FileID.equals(getB2FileIDdownloading())){
-            holder.progressBar.setVisibility(View.VISIBLE);
-            Log.i(TAG,"binding progress percentComplete: "+percentComplete);
-            holder.progressBar.setProgress(percentComplete);
+            holder.indeterminateProgressbar.setVisibility(View.GONE);
+            holder.determinateProgressbar.setVisibility(View.VISIBLE);
+            holder.determinateProgressbar.setProgress(percentComplete);
         } else {
-            holder.progressBar.setVisibility(View.GONE);
+            holder.determinateProgressbar.setVisibility(View.GONE);
         }
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String fileName = new StringBuilder(textView.getText()).toString();
                 callback.onDownloadClick( (String)textView.getTag(), fileName);
+                holder.indeterminateProgressbar.setVisibility(View.VISIBLE);
+                holder.downloadButton.setVisibility(View.GONE);
             }
         });
     }
@@ -96,12 +96,16 @@ public class FileArrayAdapter extends RecyclerView.Adapter<FileArrayAdapter.View
     // Static inner class to initialize the views of rows
     static class ViewHolder extends RecyclerView.ViewHolder {
         public TextView textView;
-        public ProgressBar progressBar;
+        public ProgressBar determinateProgressbar;
+        public ProgressBar indeterminateProgressbar;
+        public ImageView downloadButton;
         public ViewGroup layout;
         public ViewHolder(View itemView) {
             super(itemView);
-            progressBar = itemView.findViewById(R.id.progress_bar);
+            determinateProgressbar = itemView.findViewById(R.id.progress_bar);
+            indeterminateProgressbar = itemView.findViewById(R.id.starting_progress_bar);
             textView = itemView.findViewById(R.id.file_name);
+            downloadButton = itemView.findViewById(R.id.download_button);
         }
     }
 

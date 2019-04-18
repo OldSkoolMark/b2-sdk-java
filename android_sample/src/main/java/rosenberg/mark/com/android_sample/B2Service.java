@@ -30,10 +30,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.CONTENTLENGTH;
+import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.DONE;
 import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.FILEID;
-import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.FILENAME;
-import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.NUMBYTES;
-import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.TOTALBYTES;
+import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.PERCENTCOMPLETE;
 
 public class B2Service extends IntentService {
 
@@ -102,36 +102,24 @@ public class B2Service extends IntentService {
         }
     }
     public final static String BROADCAST_FILE_DOWNLOAD_PROGRESS = "downloadprogress";
-    public enum ProgressExtraKeys{ FILEID, FILENAME, NUMBYTES, TOTALBYTES};
-    private void broadcastProgress(String fileID, String fileName, long numBytes, long totalBytes) {
+    public enum ProgressExtraKeys{ FILEID, DONE, PERCENTCOMPLETE, CONTENTLENGTH};
+    private void broadcastProgress(String fileID, long percentComplete, long contentLength, boolean done) {
         Intent intent = new Intent(BROADCAST_FILE_DOWNLOAD_PROGRESS);
         intent.putExtra(FILEID.name(), fileID);
-        intent.putExtra(FILENAME.name(), fileName);
-        intent.putExtra(NUMBYTES.name(), numBytes);
-        intent.putExtra(TOTALBYTES.name(), totalBytes);
+        intent.putExtra(DONE.name(), done);
+        intent.putExtra(PERCENTCOMPLETE.name(), percentComplete);
+        intent.putExtra(CONTENTLENGTH.name(), contentLength);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
     private final B2OkHttpClientImpl.ProgressListener progressListener = new B2OkHttpClientImpl.ProgressListener() {
-        boolean firstUpdate = true;
 
         @Override public void update(final String b2FileID, long bytesRead, long contentLength, boolean done) {
             if (done) {
-                Log.i(TAG, "progress: done");
+                broadcastProgress(b2FileID, 100, contentLength, true);
             } else {
-                if (firstUpdate) {
-                    firstUpdate = false;
-                    if (contentLength == -1) {
-                        Log.i(TAG,"progress: content-length: unknown");
-                    } else {
-                        Log.i(TAG, "progress: "+String.format("content-length: %d\n", contentLength));
-                    }
-                }
-
-                Log.i(TAG,"progress: "+bytesRead);
                 if (contentLength != -1) {
                     maybeBroadcastProgress(b2FileID, bytesRead, contentLength, done);
-                    Log.i(TAG,"progress: "+String.format("%d%% done\n", (100 * bytesRead) / contentLength));
                 }
             }
         }
@@ -143,10 +131,11 @@ public class B2Service extends IntentService {
         long currentProgress = (100*bytesRead)/contentLength;
         if( done ) {
             progressMap.remove(b2FileID);
-        } else if( currentProgress - lastPercentProgress > 5){
-
+            broadcastProgress(b2FileID, 100, contentLength, true);
+        } else if(currentProgress - lastPercentProgress > 5){
+            broadcastProgress(b2FileID, currentProgress, contentLength, done);
+            progressMap.put(b2FileID, currentProgress);
         }
-        progressMap.put(b2FileID, currentProgress);
     }
     private File createDestinationFile(String b2FileName){
         String fileName = b2FileName.contains("/") ? b2FileName.substring(b2FileName.lastIndexOf("/")) : b2FileName;
