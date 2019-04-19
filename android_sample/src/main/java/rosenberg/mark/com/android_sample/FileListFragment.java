@@ -20,6 +20,7 @@ import android.widget.Toast;
 
 import com.backblaze.b2.client.structures.B2FileVersion;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
 import com.obsez.android.lib.filechooser.ChooserDialog;
 
 import java.io.File;
@@ -29,6 +30,7 @@ import java.util.List;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
@@ -59,6 +61,7 @@ public class FileListFragment extends Fragment
     private View mProgressBar;
     private FloatingActionButton mFab;
     private RecyclerView mRecyclerView;
+    private CoordinatorLayout mContainer;
     private BroadcastReceiver mDownloadProgressBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -99,9 +102,9 @@ public class FileListFragment extends Fragment
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.file_list_fragment, container, false);
-        mProgressBar = v.findViewById(R.id.progressbar);
-        mFab = v.findViewById(R.id.fab);
+        mContainer = (CoordinatorLayout)inflater.inflate(R.layout.file_list_fragment, container, false);
+        mProgressBar = mContainer.findViewById(R.id.progressbar);
+        mFab = mContainer.findViewById(R.id.fab);
         mFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -143,11 +146,11 @@ public class FileListFragment extends Fragment
             }
         });
         mArrayAdapter = new FileArrayAdapter(R.layout.file_item, new ArrayList<>(), this, this);
-        mRecyclerView = v.findViewById(R.id.file_list);
+        mRecyclerView = mContainer.findViewById(R.id.file_list);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         mRecyclerView.setItemAnimator(new DefaultItemAnimator());
         mRecyclerView.setAdapter(mArrayAdapter);
-        return v;
+        return mContainer;
     }
 
     private void startUpload(String path, File pathFile, String bucketID){
@@ -213,8 +216,14 @@ public class FileListFragment extends Fragment
 
     @Override
     public void onOpenFileClick(String b2FileID, String localFilePath) {
-        Log.i(TAG,b2FileID+ " "+ localFilePath);
-        openFile(getActivity(), localFilePath);
+        File target = localFilePath != null ? new File(localFilePath) : null;
+        if( target != null && target.exists()) {
+            openFile(getActivity(), localFilePath);
+        } else {
+            Snackbar.make(getActivity().findViewById(android.R.id.content), "Downloaded file has been moved or deleted", Snackbar.LENGTH_LONG).show();
+            DownloadedFilesInfo.getInstance(getActivity()).removePath(getActivity(), b2FileID);
+            mArrayAdapter.notifyDataSetChanged();
+        }
     }
 
     @Override

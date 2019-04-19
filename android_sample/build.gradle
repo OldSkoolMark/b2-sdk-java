@@ -30,8 +30,8 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation project(":core")
-    implementation project(":okhttp")
+    implementation project(":okhttp") // todo: maven repo
+    implementation 'com.backblaze.b2:b2-sdk-core:2.0.0'
     implementation 'com.google.code.gson:gson:2.8.5'
     implementation 'androidx.appcompat:appcompat:1.0.2'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'

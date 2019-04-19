@@ -58,4 +58,9 @@ public class DownloadedFilesInfo {
             map.putAll(tmp.map);
         }
     }
+
+    public void removePath(Activity activity, String b2FileID) {
+        map.remove(b2FileID);
+        writeToPrefs(activity);
+    }
 }

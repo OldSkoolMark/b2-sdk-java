@@ -99,6 +99,7 @@ public class FileArrayAdapter extends RecyclerView.Adapter<FileArrayAdapter.View
         }
 
         if( !TextUtils.isEmpty(DownloadedFilesInfo.getInstance(activity).getPath(b2FileID) )) {
+            holder.determinateProgressbar.setVisibility(View.GONE);
             holder.downloadButton.setVisibility(View.GONE);
             holder.openButton.setVisibility(View.VISIBLE);
         } else {
