@@ -54,12 +54,12 @@ public class FileArrayAdapter extends RecyclerView.Adapter<FileArrayAdapter.View
         itemList.clear();
         itemList.addAll(fileItemList);
         percentComplete = 0;
-        b2FileIDdownloading = "";
+        setB2FileIDdownloading("");
     }
 
     public void updateDownloadProgress(String b2FileID, long percentComplete, long contentLength, boolean done, String downloadPath){
         this.percentComplete = done ? 100 : (int)percentComplete;
-        this.b2FileIDdownloading = b2FileID;
+        setB2FileIDdownloading(b2FileID);
         this.localDownloadPath = downloadPath != null ? downloadPath : this.localDownloadPath;
         notifyDataSetChanged();
     }
