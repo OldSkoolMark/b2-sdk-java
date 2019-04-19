@@ -1,17 +1,21 @@
 package rosenberg.mark.com.android_sample;
 
 import android.Manifest;
+import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.MimeTypeMap;
 import android.widget.Toast;
 
 import com.backblaze.b2.client.structures.B2FileVersion;
@@ -27,6 +31,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
@@ -36,6 +41,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import static rosenberg.mark.com.android_sample.B2Service.BROADCAST_FILE_DOWNLOAD_PROGRESS;
+import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.DOWNLOADED_FILE_PATH;
 import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.FILEID;
 import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.DONE;
 import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.PERCENTCOMPLETE;
@@ -43,7 +49,8 @@ import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.CONT
 
 public class FileListFragment extends Fragment
         implements Observer<List<B2FileVersion>> ,
-        FileArrayAdapter.DownloadClickCallback{
+        FileArrayAdapter.DownloadClickCallback,
+        FileArrayAdapter.OpenDownloadedFileClickCallback{
 
     public final static String BUCKET_ID_KEY = "bucketid";
     private FileListViewModel mViewModel;
@@ -59,8 +66,9 @@ public class FileListFragment extends Fragment
             boolean done = intent.getBooleanExtra(DONE.name(), false);
             long percentComplete = intent.getLongExtra(PERCENTCOMPLETE.name(), -1);
             long contentLength = intent.getLongExtra(CONTENTLENGTH.name(), -1);
+            String downloadPath = intent.getStringExtra(DOWNLOADED_FILE_PATH.name());
             Log.i(TAG, "%complete "+percentComplete);
-            mArrayAdapter.updateDownloadProgress(fileID, percentComplete, contentLength, done);
+            mArrayAdapter.updateDownloadProgress(fileID, percentComplete, contentLength, done, downloadPath);
         }
     };
 
@@ -134,7 +142,7 @@ public class FileListFragment extends Fragment
                         .show();
             }
         });
-        mArrayAdapter = new FileArrayAdapter(R.layout.file_item, new ArrayList<>(), this);
+        mArrayAdapter = new FileArrayAdapter(R.layout.file_item, new ArrayList<>(), this, this);
         mRecyclerView = v.findViewById(R.id.file_list);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         mRecyclerView.setItemAnimator(new DefaultItemAnimator());
@@ -204,6 +212,12 @@ public class FileListFragment extends Fragment
     }
 
     @Override
+    public void onOpenFileClick(String b2FileID, String localFilePath) {
+        Log.i(TAG,b2FileID+ " "+ localFilePath);
+        openFile(getActivity(), localFilePath);
+    }
+
+    @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch (requestCode){
             case WRITE_EXTERNAL_STORAGE_REQUEST_CODE:
@@ -253,5 +267,22 @@ public class FileListFragment extends Fragment
         }
     }
 
+    public void openFile(Activity activity, String path) {
+        File file = new File(path);
+        MimeTypeMap map = MimeTypeMap.getSingleton();
+        String ext = MimeTypeMap.getFileExtensionFromUrl(file.getName());
+        String type = map.getMimeTypeFromExtension(ext);
+
+        if (type == null) {
+            type = "*/*";
+        }
+
+        Uri data = FileProvider.getUriForFile(activity, activity.getPackageName()+".fileprovider", file);
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        intent.setDataAndType(data, type);
+
+        activity.startActivity(intent);
+    }
     private final static String TAG = FileListFragment.class.getSimpleName();
 }

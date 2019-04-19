@@ -41,6 +41,14 @@
             android:layout_alignParentRight="true"
             android:layout_centerInParent="true"
             android:visibility="gone"/>
+        <ImageView
+            android:id="@+id/open_button"
+            app:srcCompat="@drawable/ic_outline_open_in_new_24px"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_centerInParent="true"
+            android:visibility="gone"/>
 
     </RelativeLayout>
 </androidx.cardview.widget.CardView>

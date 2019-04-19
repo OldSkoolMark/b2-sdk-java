@@ -30,12 +30,13 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.CONTENTLENGTH;
 import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.DONE;
+import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.DOWNLOADED_FILE_PATH;
 import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.FILEID;
 import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.PERCENTCOMPLETE;
 
 public class B2Service extends IntentService {
 
-    public static final String USER_AGENT = "B2 Android Sample";
+    public static final String USER_AGENT = "B2AndroidSample";
     // production
     public static final String B2_ACCOUNT_ID = "5efbe16f705d";
     public static final String B2_APPLICATION_KEY = "002eb586f79285b73bcb82720e2335ed327d2dc198";
@@ -50,6 +51,8 @@ public class B2Service extends IntentService {
     private static final String EXTRA_BUCKET_ID = "rosenberg.mark.com.android_sample.extra.BUCKET_ID";
     private static final String EXTRA_FILE_NAME = "rosenberg.mark.com.android_sample.extra.FILE_NAME";
     private static final String EXTRA_LOCAL_FILE_PATH = "rosenberg.mark.com.android_sample.extra.FILE_PATH";
+
+    private String targetLocalFilePath;
 
     public B2Service() {
         super("B2Service");
@@ -90,11 +93,13 @@ public class B2Service extends IntentService {
 
     private void handleDownload(final String fileID, final String fileName) {
         lastPercentProgress = 0;
+        targetLocalFilePath = null;
         try (final B2StorageClient client = B2StorageOkHttpClientBuilder.builder(B2_ACCOUNT_ID, B2_APPLICATION_KEY, USER_AGENT)
                 .progressListener(progressListener)
                 .build()) {
             File file = createDestinationFile(fileName);
             Log.i(TAG,"downloading to:" +file.getAbsolutePath());
+            targetLocalFilePath = file.getAbsolutePath();
             B2ContentFileWriter sink = B2ContentFileWriter.builder(file).build();
             client.downloadById(fileID, sink);
         } catch (Exception e) {
@@ -106,13 +111,14 @@ public class B2Service extends IntentService {
      * Download progress via OKHttp progress listener and local brodcast
      */
     public final static String BROADCAST_FILE_DOWNLOAD_PROGRESS = "downloadprogress";
-    public enum ProgressExtraKeys{ FILEID, DONE, PERCENTCOMPLETE, CONTENTLENGTH};
-    private void broadcastProgress(String fileID, long percentComplete, long contentLength, boolean done) {
+    public enum ProgressExtraKeys{ FILEID, DONE, PERCENTCOMPLETE, CONTENTLENGTH, DOWNLOADED_FILE_PATH};
+    private void broadcastProgress(String fileID, long percentComplete, long contentLength, boolean done, String downloadedFilePath) {
         Intent intent = new Intent(BROADCAST_FILE_DOWNLOAD_PROGRESS);
         intent.putExtra(FILEID.name(), fileID);
         intent.putExtra(DONE.name(), done);
         intent.putExtra(PERCENTCOMPLETE.name(), percentComplete);
         intent.putExtra(CONTENTLENGTH.name(), contentLength);
+        intent.putExtra(DOWNLOADED_FILE_PATH.name(), downloadedFilePath);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
@@ -120,10 +126,10 @@ public class B2Service extends IntentService {
 
         @Override public void update(final String b2FileID, long bytesRead, long contentLength, boolean done) {
             if (done) {
-                broadcastProgress(b2FileID, 100, contentLength, true);
+                broadcastProgress(b2FileID, 100, contentLength, true, targetLocalFilePath);
             } else {
                 if (contentLength != -1) {
-                    maybeBroadcastProgress(b2FileID, bytesRead, contentLength, done);
+                    maybeBroadcastProgress(b2FileID, bytesRead, contentLength, done, targetLocalFilePath);
                 }
             }
         }
@@ -131,12 +137,12 @@ public class B2Service extends IntentService {
 
     private long lastPercentProgress;
 
-    private void maybeBroadcastProgress(String b2FileID, long bytesRead, long contentLength, boolean done) {
+    private void maybeBroadcastProgress(String b2FileID, long bytesRead, long contentLength, boolean done, String targetLocalFilePath) {
         long currentProgress = (100*bytesRead)/contentLength;
         if( done ) {
-            broadcastProgress(b2FileID, 100, contentLength, true);
-        } else if(currentProgress - lastPercentProgress > 5){
-            broadcastProgress(b2FileID, currentProgress, contentLength, done);
+            broadcastProgress(b2FileID, 100, contentLength, true, targetLocalFilePath);
+        } else if(currentProgress - lastPercentProgress >= 5){
+            broadcastProgress(b2FileID, currentProgress, contentLength, done, targetLocalFilePath);
             lastPercentProgress = currentProgress;
         }
     }
@@ -146,7 +152,9 @@ public class B2Service extends IntentService {
      */
     private File createDestinationFile(String b2FileName){
         String fileName = b2FileName.contains("/") ? b2FileName.substring(b2FileName.lastIndexOf("/")) : b2FileName;
-        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName);
+        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),USER_AGENT);
+        file.mkdirs();
+        file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),USER_AGENT+"/"+ fileName);
         return file;
     }
 
