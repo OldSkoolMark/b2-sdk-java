@@ -1,5 +1,8 @@
 package rosenberg.mark.com.android_sample;
 
+import android.app.Activity;
+import android.content.Context;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -80,21 +83,22 @@ public class FileArrayAdapter extends RecyclerView.Adapter<FileArrayAdapter.View
     @Override
     public void onBindViewHolder(@NonNull final ViewHolder holder, final int listPosition) {
         final String b2FileID = itemList.get(listPosition).id;
-        boolean alreadyDownloaded = false;
         TextView textView = holder.textView;
+        Activity activity = (Activity)textView.getContext();
         textView.setText(itemList.get(listPosition).name);
         if( b2FileID.equals(getB2FileIDdownloading())){
             holder.indeterminateProgressbar.setVisibility(View.GONE);
             holder.determinateProgressbar.setVisibility(View.VISIBLE);
             holder.determinateProgressbar.setProgress(percentComplete);
             if( percentComplete == 100){
-                alreadyDownloaded = true;
+                DownloadedFilesInfo.getInstance(activity).putPath(activity, b2FileID, localDownloadPath);
             }
         } else {
             holder.determinateProgressbar.setVisibility(View.GONE);
             holder.indeterminateProgressbar.setVisibility(View.GONE);
         }
-        if( alreadyDownloaded ) {
+
+        if( !TextUtils.isEmpty(DownloadedFilesInfo.getInstance(activity).getPath(b2FileID) )) {
             holder.downloadButton.setVisibility(View.GONE);
             holder.openButton.setVisibility(View.VISIBLE);
         } else {
@@ -115,6 +119,7 @@ public class FileArrayAdapter extends RecyclerView.Adapter<FileArrayAdapter.View
         holder.openButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                localDownloadPath = DownloadedFilesInfo.getInstance(activity).getPath(b2FileID);
                 openClickCallback.onOpenFileClick(b2FileID, localDownloadPath);
             }
         });
