@@ -11,6 +11,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import androidx.annotation.NonNull;
@@ -31,6 +32,8 @@ public class FileArrayAdapter extends RecyclerView.Adapter<FileArrayAdapter.View
     private final DownloadClickCallback downloadClickCallback;
     private final OpenDownloadedFileClickCallback openClickCallback;
     private String localDownloadPath;
+
+    private final List<String> pendingDownloads = Collections.synchronizedList(new ArrayList<>());
 
     public synchronized String getB2FileIDdownloading() {
         return b2FileIDdownloading;
@@ -58,6 +61,7 @@ public class FileArrayAdapter extends RecyclerView.Adapter<FileArrayAdapter.View
     }
 
     public void updateDownloadProgress(String b2FileID, long percentComplete, long contentLength, boolean done, String downloadPath){
+        pendingDownloads.remove(b2FileID);
         this.percentComplete = done ? 100 : (int)percentComplete;
         setB2FileIDdownloading(b2FileID);
         this.localDownloadPath = downloadPath != null ? downloadPath : this.localDownloadPath;
@@ -79,39 +83,57 @@ public class FileArrayAdapter extends RecyclerView.Adapter<FileArrayAdapter.View
         return myViewHolder;
     }
 
-    // load data in each row element
+        // load data in each row element
     @Override
     public void onBindViewHolder(@NonNull final ViewHolder holder, final int listPosition) {
         final String b2FileID = itemList.get(listPosition).id;
         TextView textView = holder.textView;
         Activity activity = (Activity)textView.getContext();
         textView.setText(itemList.get(listPosition).name);
+
         if( b2FileID.equals(getB2FileIDdownloading())){
-            holder.indeterminateProgressbar.setVisibility(View.GONE);
-            holder.determinateProgressbar.setVisibility(View.VISIBLE);
-            holder.determinateProgressbar.setProgress(percentComplete);
+            // File download has started. We have content-length so we show % complete
+
             if( percentComplete == 100){
                 DownloadedFilesInfo.getInstance(activity).putPath(activity, b2FileID, localDownloadPath);
+                // File has already been downloaded
+                holder.indeterminateProgressbar.setVisibility(View.GONE);
+                holder.determinateProgressbar.setVisibility(View.GONE);
+                holder.downloadButton.setVisibility(View.GONE);
+                holder.openButton.setVisibility(View.VISIBLE);
+            } else {
+                holder.indeterminateProgressbar.setVisibility(View.VISIBLE);
+                holder.determinateProgressbar.setVisibility(View.VISIBLE);
+                holder.determinateProgressbar.setProgress(percentComplete);
+                holder.openButton.setVisibility(View.GONE);
+                holder.downloadButton.setVisibility(View.GONE);
             }
-        } else {
-            holder.determinateProgressbar.setVisibility(View.GONE);
+        } else if( !TextUtils.isEmpty(DownloadedFilesInfo.getInstance(activity).getPath(b2FileID) )) {
+            // File has already been downloaded
             holder.indeterminateProgressbar.setVisibility(View.GONE);
-        }
-
-        if( !TextUtils.isEmpty(DownloadedFilesInfo.getInstance(activity).getPath(b2FileID) )) {
             holder.determinateProgressbar.setVisibility(View.GONE);
             holder.downloadButton.setVisibility(View.GONE);
             holder.openButton.setVisibility(View.VISIBLE);
+        } else if( isQueuedForDownload(b2FileID)){
+            // Download is in queue but not started yet
+            holder.indeterminateProgressbar.setVisibility(View.VISIBLE);
+            holder.determinateProgressbar.setVisibility(View.GONE);
+            holder.downloadButton.setVisibility(View.GONE);
+            holder.downloadButton.setVisibility(View.GONE);
         } else {
             holder.downloadButton.setVisibility(View.VISIBLE);
             holder.openButton.setVisibility(View.GONE);
-
+            holder.indeterminateProgressbar.setVisibility(View.GONE);
+            holder.determinateProgressbar.setVisibility(View.GONE);
         }
 
         holder.downloadButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String fileName = new StringBuilder(textView.getText()).toString();
+                if( !pendingDownloads.contains(b2FileID)) {
+                    pendingDownloads.add(b2FileID);
+                }
                 downloadClickCallback.onDownloadClick( b2FileID, fileName);
                 holder.indeterminateProgressbar.setVisibility(View.VISIBLE);
                 holder.downloadButton.setVisibility(View.GONE);
@@ -124,6 +146,10 @@ public class FileArrayAdapter extends RecyclerView.Adapter<FileArrayAdapter.View
                 openClickCallback.onOpenFileClick(b2FileID, localDownloadPath);
             }
         });
+    }
+
+    private boolean isQueuedForDownload(String b2FileID) {
+        return pendingDownloads.contains(b2FileID);
     }
 
     // Static inner class to initialize the views of rows
