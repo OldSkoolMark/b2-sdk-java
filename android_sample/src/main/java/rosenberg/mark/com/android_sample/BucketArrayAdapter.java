@@ -63,8 +63,8 @@ public class BucketArrayAdapter extends RecyclerView.Adapter<BucketArrayAdapter.
         public void onClick(View view) {
             FileListFragment fragment = FileListFragment.newInstance((String)item.getTag());
             FragmentTransaction ft = ((FragmentActivity)view.getContext()).getSupportFragmentManager().beginTransaction();
-            ft.replace(R.id.listcontainer, fragment);
-            ft.addToBackStack(null);
+            ft.add(R.id.listcontainer, fragment);
+            ft.addToBackStack("files");
             ft.commit();
         }
     }
