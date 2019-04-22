@@ -70,7 +70,6 @@ public class FileListFragment extends Fragment
             long percentComplete = intent.getLongExtra(PERCENTCOMPLETE.name(), -1);
             long contentLength = intent.getLongExtra(CONTENTLENGTH.name(), -1);
             String downloadPath = intent.getStringExtra(DOWNLOADED_FILE_PATH.name());
-            Log.i(TAG, "%complete "+percentComplete);
             mArrayAdapter.updateDownloadProgress(fileID, percentComplete, contentLength, done, downloadPath);
         }
     };
