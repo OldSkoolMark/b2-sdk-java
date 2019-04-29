@@ -26,13 +26,13 @@ public class FileArrayAdapter extends RecyclerView.Adapter<FileArrayAdapter.View
         void onOpenFileClick( String b2FileID, String localFilePath);
     }
 
-    //All methods in this adapter are required for a bare minimum recyclerview adapter
     private final int listItemLayout;
     private final List<FileItem> itemList;
     private final DownloadClickCallback downloadClickCallback;
     private final OpenDownloadedFileClickCallback openClickCallback;
     private String localDownloadPath;
-
+    private String b2FileIDdownloading;
+    private int percentComplete;
     private final List<String> pendingDownloads = Collections.synchronizedList(new ArrayList<>());
 
     public synchronized String getB2FileIDdownloading() {
@@ -43,8 +43,6 @@ public class FileArrayAdapter extends RecyclerView.Adapter<FileArrayAdapter.View
         this.b2FileIDdownloading = b2FileIDdownloading;
     }
 
-    private String b2FileIDdownloading;
-    private int percentComplete;
     // Constructor of the class
     public FileArrayAdapter(int layoutId, ArrayList<FileItem> itemList, DownloadClickCallback downloadClickCallback, OpenDownloadedFileClickCallback openClickCallback) {
         this.listItemLayout = layoutId;

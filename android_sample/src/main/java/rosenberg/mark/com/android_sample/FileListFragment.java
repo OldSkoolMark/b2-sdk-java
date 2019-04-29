@@ -115,9 +115,8 @@ public class FileListFragment extends Fragment
                             @Override
                             public void onChoosePath(String path, File pathFile) {
                                 mUploadPath = path;
-                                mUploadPathFile = pathFile;
                                 if(ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                                    startUpload(mUploadPath, mUploadPathFile, mBucketID);
+                                    startUpload(mUploadPath, mBucketID);
                                 } else {
                                     if (ActivityCompat.shouldShowRequestPermissionRationale(getActivity(),
                                             Manifest.permission.READ_EXTERNAL_STORAGE)) {
@@ -152,7 +151,7 @@ public class FileListFragment extends Fragment
         return mContainer;
     }
 
-    private void startUpload(String path, File pathFile, String bucketID){
+    private void startUpload(String path, String bucketID){
         B2Service.startUpload(getActivity(), bucketID, path);
     }
 
@@ -179,9 +178,8 @@ public class FileListFragment extends Fragment
         mArrayAdapter.notifyDataSetChanged();
     }
     private final static int READ_EXTERNAL_STORAGE_REQUEST_CODE = 0;
-    private String mUploadPath;
-    private File mUploadPathFile;
     private final static int WRITE_EXTERNAL_STORAGE_REQUEST_CODE = 1;
+    private String mUploadPath;
     private String mB2FileID;
     private String mFilename;
 
@@ -246,7 +244,7 @@ public class FileListFragment extends Fragment
             case READ_EXTERNAL_STORAGE_REQUEST_CODE:
                 if (grantResults.length > 0 ){
                     if( grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                        startUpload(mUploadPath, mUploadPathFile, mBucketID);
+                        startUpload(mUploadPath, mBucketID);
                     } else if( grantResults[0] == PackageManager.PERMISSION_DENIED){
                         if (ActivityCompat.shouldShowRequestPermissionRationale(getActivity(), Manifest.permission.READ_EXTERNAL_STORAGE)) {
                             //Show permission explanation dialog...
@@ -275,7 +273,7 @@ public class FileListFragment extends Fragment
         }
     }
 
-    public void openFile(Activity activity, String path) {
+    private void openFile(Activity activity, String path) {
         File file = new File(path);
         MimeTypeMap map = MimeTypeMap.getSingleton();
         String ext = MimeTypeMap.getFileExtensionFromUrl(file.getName());

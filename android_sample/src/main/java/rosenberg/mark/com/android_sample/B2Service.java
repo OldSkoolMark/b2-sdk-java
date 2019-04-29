@@ -147,9 +147,6 @@ public class B2Service extends IntentService {
         }
     }
 
-    /*
-     * Upload
-     */
     private File createDestinationFile(String b2FileName){
         String fileName = b2FileName.contains("/") ? b2FileName.substring(b2FileName.lastIndexOf("/")) : b2FileName;
         File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),USER_AGENT);
@@ -157,6 +154,10 @@ public class B2Service extends IntentService {
         file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),USER_AGENT+"/"+ fileName);
         return file;
     }
+
+    /*
+     * Upload
+     */
 
     private void handleUpload(String bucketID, String localFilePath) {
         try (final B2StorageClient client = B2StorageOkHttpClientBuilder.builder(B2_ACCOUNT_ID, B2_APPLICATION_KEY, USER_AGENT).build()) {
