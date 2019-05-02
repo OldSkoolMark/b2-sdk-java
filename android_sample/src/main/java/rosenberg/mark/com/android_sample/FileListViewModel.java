@@ -47,6 +47,7 @@ public class FileListViewModel extends ViewModel {
 
     public LiveData<List<B2FileVersion>> addUploadInProgress(B2FileVersion b2FileVersion) {
         fileVersionList.add(b2FileVersion);
+        fileList.postValue(fileVersionList);
         return fileList;
     }
     private static final String TAG = FileListViewModel.class.getSimpleName();

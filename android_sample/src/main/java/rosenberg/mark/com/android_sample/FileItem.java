@@ -1,6 +1,5 @@
 package rosenberg.mark.com.android_sample;
 
-// 12/30/15
 public class FileItem {
 
     public final String name;

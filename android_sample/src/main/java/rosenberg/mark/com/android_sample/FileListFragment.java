@@ -43,11 +43,12 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import static rosenberg.mark.com.android_sample.B2Service.BROADCAST_FILE_DOWNLOAD_PROGRESS;
-import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.DOWNLOADED_FILE_PATH;
-import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.FILEID;
-import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.DONE;
-import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.PERCENTCOMPLETE;
-import static rosenberg.mark.com.android_sample.B2Service.ProgressExtraKeys.CONTENTLENGTH;
+import static rosenberg.mark.com.android_sample.B2Service.BROADCAST_FILE_UPLOAD_PROGRESS;
+import static rosenberg.mark.com.android_sample.B2Service.DownloadProgressExtraKeys.DOWNLOADED_FILE_PATH;
+import static rosenberg.mark.com.android_sample.B2Service.DownloadProgressExtraKeys.FILEID;
+import static rosenberg.mark.com.android_sample.B2Service.DownloadProgressExtraKeys.DONE;
+import static rosenberg.mark.com.android_sample.B2Service.DownloadProgressExtraKeys.PERCENTCOMPLETE;
+import static rosenberg.mark.com.android_sample.B2Service.DownloadProgressExtraKeys.CONTENTLENGTH;
 
 public class FileListFragment extends Fragment
         implements Observer<List<B2FileVersion>> ,
@@ -62,6 +63,7 @@ public class FileListFragment extends Fragment
     private FloatingActionButton mFab;
     private RecyclerView mRecyclerView;
     private CoordinatorLayout mContainer;
+    private ViewGroup mEmptyView;
     private BroadcastReceiver mDownloadProgressBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -71,6 +73,25 @@ public class FileListFragment extends Fragment
             long contentLength = intent.getLongExtra(CONTENTLENGTH.name(), -1);
             String downloadPath = intent.getStringExtra(DOWNLOADED_FILE_PATH.name());
             mArrayAdapter.updateDownloadProgress(fileID, percentComplete, contentLength, done, downloadPath);
+        }
+    };
+
+    private BroadcastReceiver mUploadProgressBroadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String fileID = intent.getStringExtra(B2Service.UploadProgressExtraKeys.FILEID.name());
+            String fileName = intent.getStringExtra(B2Service.UploadProgressExtraKeys.FILENAME.name());
+            String bucketID = intent.getStringExtra(B2Service.UploadProgressExtraKeys.BUCKETID.name());
+            long percentComplete = intent.getLongExtra(B2Service.UploadProgressExtraKeys.PERCENTCOMPLETE.name(), -1);
+            long contentLength = intent.getLongExtra(B2Service.UploadProgressExtraKeys.CONTENTLENGTH.name(), -1);
+            if( percentComplete == 100 ){
+                if( mBucketID != null) {
+                    showProgress(true);
+                    mViewModel.getAllFiles(mBucketID).observe(getActivity(), FileListFragment.this);
+                }
+            }else if( fileName != null && percentComplete > -1 && contentLength > -1){
+                mArrayAdapter.updateUploadProgress(fileName, fileID, bucketID, percentComplete, contentLength);
+            }
         }
     };
 
@@ -89,6 +110,8 @@ public class FileListFragment extends Fragment
         mBucketID = b != null ? b.getString(BUCKET_ID_KEY) : null;
         LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mDownloadProgressBroadcastReceiver,
                 new IntentFilter(BROADCAST_FILE_DOWNLOAD_PROGRESS));
+        LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mUploadProgressBroadcastReceiver,
+                new IntentFilter(BROADCAST_FILE_UPLOAD_PROGRESS));
     }
 
     @Override
@@ -96,12 +119,15 @@ public class FileListFragment extends Fragment
         super.onDestroy();
         LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mDownloadProgressBroadcastReceiver,
                 new IntentFilter(BROADCAST_FILE_DOWNLOAD_PROGRESS));
+        LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mUploadProgressBroadcastReceiver,
+                new IntentFilter(BROADCAST_FILE_UPLOAD_PROGRESS));
     }
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         mContainer = (CoordinatorLayout)inflater.inflate(R.layout.file_list_fragment, container, false);
+        mEmptyView = mContainer.findViewById(R.id.no_files_layout);
         mProgressBar = mContainer.findViewById(R.id.progressbar);
         mFab = mContainer.findViewById(R.id.fab);
         mFab.setOnClickListener(new View.OnClickListener() {
@@ -152,7 +178,12 @@ public class FileListFragment extends Fragment
     }
 
     private void startUpload(String path, String bucketID){
+        String fileName = Utils.extractFileNameFromPath(path);
+        B2FileVersion b2FileVersion = new B2FileVersion(null, fileName, -1, "", "", null, "uploading", System.currentTimeMillis());
+        mViewModel.addUploadInProgress(b2FileVersion);
         B2Service.startUpload(getActivity(), bucketID, path);
+        mArrayAdapter.setUploadFileName(fileName);
+        mArrayAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -173,9 +204,17 @@ public class FileListFragment extends Fragment
     @Override
     public void onChanged(List<B2FileVersion> b2FileVersions) {
         List<FileItem> fileItemList = DisplayModel.fileItems(b2FileVersions);
-        showProgress(false);
-        mArrayAdapter.loadFileItems(fileItemList);
-        mArrayAdapter.notifyDataSetChanged();
+        Log.i(TAG, "number of files: "+(fileItemList != null ? fileItemList.size() : 0));
+        if( fileItemList.size() > 0) {
+            showProgress(false);
+            mRecyclerView.setVisibility(View.VISIBLE);
+            mArrayAdapter.loadFileItems(fileItemList);
+            mArrayAdapter.notifyDataSetChanged();
+        } else {
+            showProgress(false);
+            mRecyclerView.setVisibility(View.GONE);
+            mEmptyView.setVisibility(View.VISIBLE);
+        }
     }
     private final static int READ_EXTERNAL_STORAGE_REQUEST_CODE = 0;
     private final static int WRITE_EXTERNAL_STORAGE_REQUEST_CODE = 1;
