@@ -2,7 +2,6 @@ package rosenberg.mark.com.android_sample;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -11,6 +10,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,7 +18,6 @@ import android.view.ViewGroup;
 import android.webkit.MimeTypeMap;
 import android.widget.Toast;
 
-import com.backblaze.b2.client.structures.B2FileVersion;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.obsez.android.lib.filechooser.ChooserDialog;
@@ -44,14 +43,14 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import static rosenberg.mark.com.android_sample.B2Service.BROADCAST_FILE_DOWNLOAD_PROGRESS;
 import static rosenberg.mark.com.android_sample.B2Service.BROADCAST_FILE_UPLOAD_PROGRESS;
+import static rosenberg.mark.com.android_sample.B2Service.DownloadProgressExtraKeys.CONTENTLENGTH;
+import static rosenberg.mark.com.android_sample.B2Service.DownloadProgressExtraKeys.DONE;
 import static rosenberg.mark.com.android_sample.B2Service.DownloadProgressExtraKeys.DOWNLOADED_FILE_PATH;
 import static rosenberg.mark.com.android_sample.B2Service.DownloadProgressExtraKeys.FILEID;
-import static rosenberg.mark.com.android_sample.B2Service.DownloadProgressExtraKeys.DONE;
 import static rosenberg.mark.com.android_sample.B2Service.DownloadProgressExtraKeys.PERCENTCOMPLETE;
-import static rosenberg.mark.com.android_sample.B2Service.DownloadProgressExtraKeys.CONTENTLENGTH;
 
 public class FileListFragment extends Fragment
-        implements Observer<List<B2FileVersion>> ,
+        implements Observer<List<FileItem>> ,
         FileArrayAdapter.DownloadClickCallback,
         FileArrayAdapter.OpenDownloadedFileClickCallback{
 
@@ -72,7 +71,10 @@ public class FileListFragment extends Fragment
             long percentComplete = intent.getLongExtra(PERCENTCOMPLETE.name(), -1);
             long contentLength = intent.getLongExtra(CONTENTLENGTH.name(), -1);
             String downloadPath = intent.getStringExtra(DOWNLOADED_FILE_PATH.name());
-            mArrayAdapter.updateDownloadProgress(fileID, percentComplete, contentLength, done, downloadPath);
+            mViewModel.updateDownloadProgress(fileID, downloadPath, contentLength, percentComplete, done);
+            if( done ){
+                DownloadedFilesInfo.getInstance(getActivity()).putPath(getActivity(), fileID, downloadPath);
+            }
         }
     };
 
@@ -177,14 +179,16 @@ public class FileListFragment extends Fragment
         return mContainer;
     }
 
-    private void startUpload(String path, String bucketID){
+    private void startUpload(String path, String bucketID) {
         String fileName = Utils.extractFileNameFromPath(path);
-        B2FileVersion b2FileVersion = new B2FileVersion(null, fileName, -1, "", "", null, "uploading", System.currentTimeMillis());
-        mViewModel.addUploadInProgress(b2FileVersion);
+        FileItem fileItem = new FileItem.Builder(fileName, "", FileItem.State.UPLOADING)
+                .bucketID(bucketID)
+                .build();
+        mViewModel.addUploadInProgress(fileItem);
         B2Service.startUpload(getActivity(), bucketID, path);
-        mArrayAdapter.setUploadFileName(fileName);
         mArrayAdapter.notifyDataSetChanged();
     }
+
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
@@ -202,19 +206,24 @@ public class FileListFragment extends Fragment
     }
 
     @Override
-    public void onChanged(List<B2FileVersion> b2FileVersions) {
-        List<FileItem> fileItemList = DisplayModel.fileItems(b2FileVersions);
-        Log.i(TAG, "number of files: "+(fileItemList != null ? fileItemList.size() : 0));
+    public void onChanged(List<FileItem> fileItemList) {
+        for( FileItem item : fileItemList ){
+            // Checking here instead of ViewModel because we need activity context
+            if (!TextUtils.isEmpty(DownloadedFilesInfo.getInstance(getActivity()).getPath(item.id))){
+                Log.i(TAG, "on device: "+DownloadedFilesInfo.getInstance(getActivity()).getPath(item.id));
+                item.setState(FileItem.State.DOWNLOADED);
+            }
+        }
         if( fileItemList.size() > 0) {
             showProgress(false);
             mRecyclerView.setVisibility(View.VISIBLE);
             mArrayAdapter.loadFileItems(fileItemList);
-            mArrayAdapter.notifyDataSetChanged();
         } else {
             showProgress(false);
             mRecyclerView.setVisibility(View.GONE);
             mEmptyView.setVisibility(View.VISIBLE);
         }
+        mArrayAdapter.notifyDataSetChanged();
     }
     private final static int READ_EXTERNAL_STORAGE_REQUEST_CODE = 0;
     private final static int WRITE_EXTERNAL_STORAGE_REQUEST_CODE = 1;
@@ -227,6 +236,7 @@ public class FileListFragment extends Fragment
         mB2FileID = b2FileID;
         mFilename = fileName;
         if(ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+            mViewModel.changeItemState(b2FileID, FileItem.State.IN_DOWNLOAD_QUEUE);
             B2Service.startDownload(getActivity(), mB2FileID, mFilename);
         } else {
             if (ActivityCompat.shouldShowRequestPermissionRationale(getActivity(),
@@ -258,6 +268,7 @@ public class FileListFragment extends Fragment
         } else {
             Snackbar.make(getActivity().findViewById(android.R.id.content), "Downloaded file has been moved or deleted", Snackbar.LENGTH_LONG).show();
             DownloadedFilesInfo.getInstance(getActivity()).removePath(getActivity(), b2FileID);
+            mViewModel.changeItemState(b2FileID, FileItem.State.DOWNLOADABLE);
             mArrayAdapter.notifyDataSetChanged();
         }
     }

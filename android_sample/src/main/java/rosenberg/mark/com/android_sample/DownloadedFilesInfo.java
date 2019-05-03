@@ -24,43 +24,44 @@ public class DownloadedFilesInfo {
         readFromPrefs(activity);
     }
 
-    public void putPath( Activity activity, String b2FileID, String localPath){
+    public synchronized void putPath( Activity activity, String b2FileID, String localPath){
         map.put(b2FileID, localPath);
         writeToPrefs(activity);
     }
-    public String getPath( String b2FileID){
+    public synchronized String getPath( String b2FileID){
         return map.get(b2FileID);
     }
 
-    public void writeToPrefs(Activity activity){
+    public synchronized void writeToPrefs(Activity activity){
         SharedPreferences sharedPref = activity.getApplicationContext().getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putString(MAP_PREF, toJson());
         editor.commit();
 
     }
-    public void readFromPrefs(Activity activity){
+    public synchronized void readFromPrefs(Activity activity){
         SharedPreferences sharedPref = activity.getApplicationContext().getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
         String json = sharedPref.getString(MAP_PREF, null);
         fromJson(json);
     }
-    public String toJson(){
+
+    public synchronized void removePath(Activity activity, String b2FileID) {
+        map.remove(b2FileID);
+        writeToPrefs(activity);
+    }
+
+    private String toJson(){
         Gson gson = new Gson();
         String json = gson.toJson(this);
         return json;
     }
 
-    public void fromJson(String json){
+    private void fromJson(String json){
         Gson gson = new Gson();
         DownloadedFilesInfo tmp = gson.fromJson(json, DownloadedFilesInfo.class);
         map.clear();
         if( tmp != null ) {
             map.putAll(tmp.map);
         }
-    }
-
-    public void removePath(Activity activity, String b2FileID) {
-        map.remove(b2FileID);
-        writeToPrefs(activity);
     }
 }

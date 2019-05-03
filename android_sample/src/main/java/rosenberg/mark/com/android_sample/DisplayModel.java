@@ -19,7 +19,7 @@ public class DisplayModel {
     public static @NonNull List<FileItem> fileItems(@NonNull List<B2FileVersion> b2FileVersions){
         List<FileItem> items = new ArrayList<>(b2FileVersions.size());
         for( B2FileVersion fileVersion : b2FileVersions ){
-            items.add(new FileItem(fileVersion.getFileName(), fileVersion.getFileId()));
+            items.add(new FileItem(fileVersion.getFileName(), fileVersion.getFileId(), FileItem.State.UNKNOWN));
         }
         return items;
     }

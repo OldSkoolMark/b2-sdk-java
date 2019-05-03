@@ -113,6 +113,7 @@ public class B2Service extends IntentService {
     public final static String BROADCAST_FILE_DOWNLOAD_PROGRESS = "downloadprogress";
     public enum DownloadProgressExtraKeys { FILEID, DONE, PERCENTCOMPLETE, CONTENTLENGTH, DOWNLOADED_FILE_PATH};
     private void broadcastDownloadProgress(String fileID, long percentComplete, long contentLength, boolean done, String downloadedFilePath) {
+        Log.i(TAG, "downloading: "+fileID+" "+percentComplete+"% "+downloadedFilePath);
         Intent intent = new Intent(BROADCAST_FILE_DOWNLOAD_PROGRESS);
         intent.putExtra(FILEID.name(), fileID);
         intent.putExtra(DownloadProgressExtraKeys.DONE.name(), done);
