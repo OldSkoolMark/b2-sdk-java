@@ -50,6 +50,7 @@ public class FileListViewModel extends ViewModel {
     }
 
     public LiveData<List<FileItem>> addUploadInProgress(FileItem fileItem) {
+        fileItem.setState(FileItem.State.UPLOADING);
         fileItemList.add(fileItem);
         fileList.postValue(fileItemList);
         return fileList;
@@ -60,7 +61,7 @@ public class FileListViewModel extends ViewModel {
         Log.i(TAG,"updateDownloadProgress() "+percentComplete+" "+done);
         FileItem fileItem = getFileItemByID(fileID);
         if( fileItem != null ) {
-            fileItem.setDownloadedFilePath(downloadPath);
+            fileItem.setLocalFilePath(downloadPath);
             fileItem.setContentLength(contentLength);
             fileItem.setPercentComplete(percentComplete);
             fileItem.setDone(done);
@@ -68,6 +69,24 @@ public class FileListViewModel extends ViewModel {
                 fileItem.setState(FileItem.State.DOWNLOADING);
             } else {
                 fileItem.setState(FileItem.State.DOWNLOAD_SUCCESS);
+            }
+        }
+        fileList.postValue(fileItemList);
+        return fileList;
+    }
+
+    public LiveData<List<FileItem>> updateUploadProgress(String downloadPath, long contentLength, long percentComplete, boolean done) {
+        Log.i(TAG,"updateDownloadProgress() "+percentComplete+" "+done);
+        FileItem fileItem = getFileItemByLocalPath(downloadPath);
+        if( fileItem != null ) {
+            fileItem.setLocalFilePath(downloadPath);
+            fileItem.setContentLength(contentLength);
+            fileItem.setPercentComplete(percentComplete);
+            fileItem.setDone(done);
+            if( !done ){
+                fileItem.setState(FileItem.State.UPLOADING);
+            } else {
+                fileItem.setState(FileItem.State.UPLOAD_SUCCESS);
             }
         }
         fileList.postValue(fileItemList);
@@ -86,6 +105,16 @@ public class FileListViewModel extends ViewModel {
     private FileItem getFileItemByID(String fileID){
         for( FileItem fi : fileItemList){
             if (fi.id.equals(fileID)) {
+                return fi;
+            }
+        }
+        return null;
+    }
+    private FileItem getFileItemByLocalPath(String path){
+        for( FileItem fi : fileItemList){
+            Log.i(TAG," a: "+fi.getLocalFilePath());
+            Log.i(TAG," b: "+path);
+            if (fi.getLocalFilePath() != null && fi.getLocalFilePath().equals(path)) {
                 return fi;
             }
         }

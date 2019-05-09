@@ -4,7 +4,7 @@ public class FileItem {
     private FileItem(Builder builder) {
         name = builder.name;
         id = builder.id;
-        downloadedFilePath = builder.downloadedFilePath;
+        localFilePath = builder.localFilePath;
         percentComplete = builder.percentComplete;
         contentLength = builder.contentLength;
         done = builder.done;
@@ -25,7 +25,7 @@ public class FileItem {
     }
     public final String name;
     public final String id;
-    private String downloadedFilePath;
+    private String localFilePath;
     private long percentComplete;
     private long contentLength;
     private boolean done;
@@ -42,12 +42,12 @@ public class FileItem {
     }
 
 
-    public String getDownloadedFilePath() {
-        return downloadedFilePath;
+    public String getLocalFilePath() {
+        return localFilePath;
     }
 
-    public FileItem setDownloadedFilePath(String downloadedFilePath) {
-        this.downloadedFilePath = downloadedFilePath;
+    public FileItem setLocalFilePath(String localFilePath) {
+        this.localFilePath = localFilePath;
         return this;
     }
 
@@ -98,7 +98,7 @@ public class FileItem {
         private final String name;
         private final String id;
         private String bucketID;
-        private String downloadedFilePath;
+        private String localFilePath;
         private long percentComplete;
         private long contentLength;
         private boolean done;
@@ -110,13 +110,13 @@ public class FileItem {
             this.state = state;
         }
 
-        public Builder downloadedFilePath(String val) {
-            downloadedFilePath = val;
+        public Builder localFilePath(String val) {
+            localFilePath = val;
             return this;
         }
 
         public Builder bucketID(String val) {
-            downloadedFilePath = val;
+            bucketID = val;
             return this;
         }
 

@@ -43,16 +43,6 @@ public class FileArrayAdapter extends RecyclerView.Adapter<FileArrayAdapter.View
         itemList.addAll(fileItemList);
     }
 
-    public void updateDownloadProgress(String b2FileID, long percentComplete, long contentLength, boolean done, String downloadPath){
-        PendingDownloadList.getInstance().removeFileItem(b2FileID);
-        notifyDataSetChanged();
-    }
-
-    public void updateUploadProgress(String fileName, String fileID, String bucketID, long percentComplete, long contentLength) {
-        Log.i(TAG,"updateUploadProgress: "+percentComplete+" "+fileName);
-        notifyDataSetChanged();
-    }
-
     // get the size of the list
     @Override
     public int getItemCount() {
@@ -68,7 +58,20 @@ public class FileArrayAdapter extends RecyclerView.Adapter<FileArrayAdapter.View
         return myViewHolder;
     }
 
-        // load data in each row element
+    private void handleDownloadClick(TextView textView, String b2FileID, ViewHolder holder){
+        PendingDownloadList pendingDownloads = PendingDownloadList.getInstance();
+        String fileName = new StringBuilder(textView.getText()).toString();
+        FileItem fileItem = pendingDownloads.getFileItem(b2FileID);
+        if( fileItem == null ) {
+            pendingDownloads.addFileItem(new FileItem(fileName, b2FileID, FileItem.State.IN_DOWNLOAD_QUEUE));
+        } else {
+            fileItem.setState(FileItem.State.IN_DOWNLOAD_QUEUE);
+        }
+        downloadClickCallback.onDownloadClick(b2FileID, fileName);
+        holder.indeterminateProgressbar.setVisibility(View.VISIBLE);
+        holder.downloadButton.setVisibility(View.GONE);
+    }
+    // load data in each row element
     @Override
     public void onBindViewHolder(@NonNull final ViewHolder holder, final int listPosition) {
         TextView textView = holder.textView;
@@ -87,22 +90,12 @@ public class FileArrayAdapter extends RecyclerView.Adapter<FileArrayAdapter.View
                 holder.downloadButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        PendingDownloadList pendingDownloads = PendingDownloadList.getInstance();
-                        String fileName = new StringBuilder(textView.getText()).toString();
-                        FileItem fileItem = pendingDownloads.getFileItem(b2FileID);
-                        if( fileItem == null ) {
-                            pendingDownloads.addFileItem(new FileItem(fileName, b2FileID, FileItem.State.IN_DOWNLOAD_QUEUE));
-                        } else {
-                            fileItem.setState(FileItem.State.IN_DOWNLOAD_QUEUE);
-                        }
-                        downloadClickCallback.onDownloadClick(b2FileID, fileName);
-                        holder.indeterminateProgressbar.setVisibility(View.VISIBLE);
-                        holder.downloadButton.setVisibility(View.GONE);
+                        handleDownloadClick(textView, b2FileID, holder);
                     }
                 });
                 break;
             case DOWNLOAD_SUCCESS:
-               DownloadedFilesInfo.getInstance(activity).putPath(activity, b2FileID, fileItem.getDownloadedFilePath());
+               DownloadedFilesInfo.getInstance(activity).putPath(activity, b2FileID, fileItem.getLocalFilePath());
                 // File has already been downloaded
             case DOWNLOADED:
                 holder.indeterminateProgressbar.setVisibility(View.GONE);
@@ -134,15 +127,24 @@ public class FileArrayAdapter extends RecyclerView.Adapter<FileArrayAdapter.View
             case UPLOADING:
                 holder.downloadButton.setVisibility(View.GONE);
                 holder.indeterminateProgressbar.setVisibility(View.VISIBLE);
+                Log.i(TAG,"progess: "+fileItem.getPercentComplete());
                 holder.determinateProgressbar.setProgress((int)fileItem.getPercentComplete());
                 holder.determinateProgressbar.setVisibility(View.VISIBLE);
                 break;
             case UPLOAD_SUCCESS:
                 holder.openButton.setVisibility(View.GONE);
                 holder.downloadButton.setVisibility(View.VISIBLE);
+                holder.downloadButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        handleDownloadClick(textView, b2FileID, holder);
+                    }
+                });
                 holder.determinateProgressbar.setVisibility(View.GONE);
                 holder.indeterminateProgressbar.setVisibility(View.GONE);
                 break;
+            default:
+                Log.e(TAG,"Unhandled item state");
         }
     }
 

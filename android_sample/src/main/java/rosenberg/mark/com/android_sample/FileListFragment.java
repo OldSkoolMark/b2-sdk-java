@@ -86,13 +86,9 @@ public class FileListFragment extends Fragment
             String bucketID = intent.getStringExtra(B2Service.UploadProgressExtraKeys.BUCKETID.name());
             long percentComplete = intent.getLongExtra(B2Service.UploadProgressExtraKeys.PERCENTCOMPLETE.name(), -1);
             long contentLength = intent.getLongExtra(B2Service.UploadProgressExtraKeys.CONTENTLENGTH.name(), -1);
+            mViewModel.updateUploadProgress(fileName, contentLength, percentComplete, percentComplete == 100);
             if( percentComplete == 100 ){
-                if( mBucketID != null) {
-                    showProgress(true);
-                    mViewModel.getAllFiles(mBucketID).observe(getActivity(), FileListFragment.this);
-                }
-            }else if( fileName != null && percentComplete > -1 && contentLength > -1){
-                mArrayAdapter.updateUploadProgress(fileName, fileID, bucketID, percentComplete, contentLength);
+                mFab.setClickable(true);
             }
         }
     };
@@ -109,7 +105,7 @@ public class FileListFragment extends Fragment
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Bundle b = getArguments();
-        mBucketID = b != null ? b.getString(BUCKET_ID_KEY) : null;
+        mBucketID = b.getString(BUCKET_ID_KEY);
         LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mDownloadProgressBroadcastReceiver,
                 new IntentFilter(BROADCAST_FILE_DOWNLOAD_PROGRESS));
         LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mUploadProgressBroadcastReceiver,
@@ -132,6 +128,7 @@ public class FileListFragment extends Fragment
         mEmptyView = mContainer.findViewById(R.id.no_files_layout);
         mProgressBar = mContainer.findViewById(R.id.progressbar);
         mFab = mContainer.findViewById(R.id.fab);
+        // Set up fab to show file chooser for upload to bucket
         mFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -180,8 +177,10 @@ public class FileListFragment extends Fragment
     }
 
     private void startUpload(String path, String bucketID) {
+        mFab.setClickable(false);
         String fileName = Utils.extractFileNameFromPath(path);
         FileItem fileItem = new FileItem.Builder(fileName, "", FileItem.State.UPLOADING)
+                .localFilePath(path)
                 .bucketID(bucketID)
                 .build();
         mViewModel.addUploadInProgress(fileItem);

@@ -111,7 +111,7 @@ public class B2Service extends IntentService {
      * Download progress via OKHttp progress listener and local brodcast
      */
     public final static String BROADCAST_FILE_DOWNLOAD_PROGRESS = "downloadprogress";
-    public enum DownloadProgressExtraKeys { FILEID, DONE, PERCENTCOMPLETE, CONTENTLENGTH, DOWNLOADED_FILE_PATH};
+    public enum DownloadProgressExtraKeys { FILEID, DONE, PERCENTCOMPLETE, CONTENTLENGTH, DOWNLOADED_FILE_PATH}
     private void broadcastDownloadProgress(String fileID, long percentComplete, long contentLength, boolean done, String downloadedFilePath) {
         Log.i(TAG, "downloading: "+fileID+" "+percentComplete+"% "+downloadedFilePath);
         Intent intent = new Intent(BROADCAST_FILE_DOWNLOAD_PROGRESS);
@@ -130,7 +130,7 @@ public class B2Service extends IntentService {
                 broadcastDownloadProgress(b2FileID, 100, contentLength, true, targetLocalFilePath);
             } else {
                 if (contentLength != -1) {
-                    maybeBroadcastDownloadProgress(b2FileID, bytesRead, contentLength, done, targetLocalFilePath);
+                    maybeBroadcastDownloadProgress(b2FileID, bytesRead, contentLength, false, targetLocalFilePath);
                 }
             }
         }
@@ -143,7 +143,7 @@ public class B2Service extends IntentService {
         if( done ) {
             broadcastDownloadProgress(b2FileID, 100, contentLength, true, targetLocalFilePath);
         } else if(currentProgress - lastPercentDownloadProgress >= 5){
-            broadcastDownloadProgress(b2FileID, currentProgress, contentLength, done, targetLocalFilePath);
+            broadcastDownloadProgress(b2FileID, currentProgress, contentLength, false, targetLocalFilePath);
             lastPercentDownloadProgress = currentProgress;
         }
     }
@@ -160,7 +160,7 @@ public class B2Service extends IntentService {
      * Upload
      */
     public final static String BROADCAST_FILE_UPLOAD_PROGRESS = "uploadprogress";
-    public enum UploadProgressExtraKeys { FILENAME, FILEID, PERCENTCOMPLETE, CONTENTLENGTH, BUCKETID };
+    public enum UploadProgressExtraKeys { FILENAME, FILEID, PERCENTCOMPLETE, CONTENTLENGTH, BUCKETID, LOCAL_FILE_PATH }
 
     private void broadcastUploadProgress(String fileName, String bucketID, long percentComplete, long contentLength) {
         Log.i(TAG, "broadcastUploadProgress: "+percentComplete+"% "+fileName);
@@ -172,11 +172,11 @@ public class B2Service extends IntentService {
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
-    private void broadcastUploadProgress(String fileID, String fileName, String bucketID, long percentComplete, long contentLength) {
-        Log.i(TAG, "broadcastUploadProgress: "+percentComplete+"% "+fileName);
+    private void broadcastUploadProgress(String localFilePath, String fileID, String bucketID, long percentComplete, long contentLength) {
+        Log.i(TAG, "broadcastUploadProgress: "+percentComplete+"% "+localFilePath);
         Intent intent = new Intent(BROADCAST_FILE_UPLOAD_PROGRESS);
         intent.putExtra(UploadProgressExtraKeys.FILEID.name(), fileID);
-        intent.putExtra(UploadProgressExtraKeys.FILENAME.name(), fileName);
+        intent.putExtra(UploadProgressExtraKeys.FILENAME.name(), localFilePath);
         intent.putExtra(UploadProgressExtraKeys.BUCKETID.name(), bucketID);
         intent.putExtra(UploadProgressExtraKeys.PERCENTCOMPLETE.name(), percentComplete);
         intent.putExtra(UploadProgressExtraKeys.CONTENTLENGTH.name(), contentLength);
@@ -186,7 +186,6 @@ public class B2Service extends IntentService {
     private void handleUpload(String bucketID, String localFilePath) {
         try (final B2StorageClient client = B2StorageOkHttpClientBuilder.builder(B2_ACCOUNT_ID, B2_APPLICATION_KEY, USER_AGENT).build()) {
             final File localFile = new File(localFilePath);
-            final String sha1 = getFileSHA1(localFilePath);
             final B2ContentSource source  = B2FileContentSource.builder(localFile).build();
             // remove leading / to make B2 happy
             final String fileName = localFilePath.startsWith("/") ? localFilePath.substring(1) : localFilePath; // todo: don't store path?
@@ -198,22 +197,14 @@ public class B2Service extends IntentService {
                         public void progress(B2UploadProgress progress) {
                             long percentComplete = progress.getState() == B2UploadState.SUCCEEDED ? 100 : (100*progress.getBytesSoFar())/progress.getLength();
                             percentComplete = percentComplete > 99 ? 99 : percentComplete;
-                            broadcastUploadProgress(fileName, bucketID, percentComplete, progress.getLength() );
+                            broadcastUploadProgress(localFilePath, bucketID, percentComplete, progress.getLength() );
                         }
                     })
                     .build();
             B2FileVersion b2FileVersion = client.uploadSmallFile(request);
-            broadcastUploadProgress(fileName, b2FileVersion.getFileId(), bucketID, 100, b2FileVersion.getContentLength());
+            broadcastUploadProgress(localFilePath, b2FileVersion.getFileId(), bucketID, 100, b2FileVersion.getContentLength());
         } catch (B2Exception e) {
             Log.e(TAG,e.getMessage());
-        } /*catch (NoSuchAlgorithmException e) {
-            Log.e(TAG,e.getMessage());
-        }catch (IOException e) {
-            Log.e(TAG,e.getMessage());
-        }*/ catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
