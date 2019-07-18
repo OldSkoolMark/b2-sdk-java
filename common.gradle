@@ -21,6 +21,7 @@ android {
 dependencies {
     testImplementation group: 'junit', name: 'junit', version: '4.12'
     testImplementation "org.mockito:mockito-core:1.9.5"
+    api 'com.jakewharton.threetenabp:threetenabp:1.2.1'
 }
 
 

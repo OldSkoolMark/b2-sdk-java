@@ -4,6 +4,8 @@
  */
 package com.backblaze.b2.client;
 
+import android.os.Build;
+
 import com.backblaze.b2.client.contentSources.B2ContentSource;
 import com.backblaze.b2.client.contentSources.B2ContentTypes;
 import com.backblaze.b2.client.contentSources.B2Headers;
@@ -24,6 +26,7 @@ import com.backblaze.b2.util.B2Preconditions;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -33,13 +36,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.function.Supplier;
+import com.backblaze.b2.util.B2Supplier;
 
 class B2LargeFileUploader {
     private final B2Retryer retryer;
     private final B2StorageClientWebifier webifier;
     private final B2AccountAuthorizationCache accountAuthCache;
-    private final Supplier<B2RetryPolicy> retryPolicySupplier;
+    private final B2Supplier<B2RetryPolicy> retryPolicySupplier;
     private final ExecutorService executor;
     private final B2PartSizes partSizes;
     private final B2UploadFileRequest request;
@@ -48,7 +51,7 @@ class B2LargeFileUploader {
     B2LargeFileUploader(B2Retryer retryer,
                         B2StorageClientWebifier webifier,
                         B2AccountAuthorizationCache accountAuthCache,
-                        Supplier<B2RetryPolicy> retryPolicySupplier,
+                        B2Supplier<B2RetryPolicy> retryPolicySupplier,
                         ExecutorService executor,
                         B2PartSizes partSizes,
                         B2UploadFileRequest request,
@@ -83,7 +86,11 @@ class B2LargeFileUploader {
         throwIfLargeFileVersionDoesntSeemToMatchRequest(largeFileVersion, contentLength, request);
 
         // sort the alreadyUploadedParts so it's easy to walk through them in order.
-        alreadyUploadedParts.sort(Comparator.comparingInt(B2Part::getPartNumber));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            alreadyUploadedParts.sort(Comparator.comparingInt(B2Part::getPartNumber));
+        } else {
+            Collections.sort(alreadyUploadedParts, B2Part.partNumberComparator);
+        }
 
         // we could use the part#1's size as the recommendedPartSize,
         // but sometimes we won't have part#1, so we could pick the lowest-numbered part's size

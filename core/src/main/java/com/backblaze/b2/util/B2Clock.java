@@ -4,7 +4,7 @@
  */
 package com.backblaze.b2.util;
 
-import java.time.LocalDateTime;
+import org.threeten.bp.LocalDateTime;
 
 /**
  * This class provides access to two different time measurements.

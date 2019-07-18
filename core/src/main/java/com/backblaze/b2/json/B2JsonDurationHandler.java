@@ -8,7 +8,7 @@ package com.backblaze.b2.json;
 import com.backblaze.b2.util.B2DateTimeUtil;
 
 import java.io.IOException;
-import java.time.Duration;
+import org.threeten.bp.Duration;
 
 class B2JsonDurationHandler implements B2JsonTypeHandler<Duration> {
 

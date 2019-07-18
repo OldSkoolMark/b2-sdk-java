@@ -4,6 +4,10 @@
  */
 package com.backblaze.b2.client;
 
+import android.os.Build;
+
+import com.backblaze.b2.client.structures.B2Part;
+
 import java.util.Comparator;
 import java.util.Objects;
 
@@ -12,10 +16,55 @@ import java.util.Objects;
  * It has the partNumber and the offset &amp; length of the part in the file.
  */
 public class B2PartSpec implements Comparable<B2PartSpec> {
-    private static Comparator<B2PartSpec> comparator = Comparator
+/*    private static Comparator<B2PartSpec> comparator = Comparator
             .comparingInt(B2PartSpec::getPartNumber)
             .thenComparing(Comparator.comparingLong(B2PartSpec::getStart))
-            .thenComparing(Comparator.comparingLong(B2PartSpec::getLength));
+            .thenComparing(Comparator.comparingLong(B2PartSpec::getLength)); */
+
+    private static Comparator<B2PartSpec> comparator = new Comparator<B2PartSpec>(){
+
+        @Override
+        public int compare(B2PartSpec p1, B2PartSpec p2) {
+            int partComparison = partNumberComparator.compare(p1, p2);
+            if( partComparison != 0 ){
+                return partComparison;
+            } else {
+                int startComparison = startComparator.compare(p1, p2);
+                if( startComparison != 0){
+                    return startComparison;
+                } else {
+                    return lengthComparator.compare(p1, p2);
+                }
+            }
+        }
+    };
+
+    public static Comparator<B2PartSpec> partNumberComparator = new Comparator<B2PartSpec>() {
+        @Override
+        public int compare(B2PartSpec p1, B2PartSpec p2) {
+            return p1.getPartNumber() - p2.getPartNumber();
+        }
+    };
+    public static Comparator<B2PartSpec> startComparator = new Comparator<B2PartSpec>(){
+
+        @Override
+        public int compare(B2PartSpec p1, B2PartSpec p2) {
+            if( p1.getStart() == p2.getStart())
+                return 0;
+            else
+                return p1.getStart() > p2.getStart() ? 1 : -1;
+        }
+    };
+    public static Comparator<B2PartSpec> lengthComparator = new Comparator<B2PartSpec>(){
+
+        @Override
+        public int compare(B2PartSpec p1, B2PartSpec p2) {
+            if( p1.getLength() == p2.getLength())
+                return 0;
+            else
+                return p1.getLength() > p2.getLength() ? 1 : -1;
+        }
+    };
 
     final int partNumber; // one-based part number.
     final long start;     // byte offset in the file (zero-based)

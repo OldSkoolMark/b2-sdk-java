@@ -4,8 +4,8 @@
  */
 package com.backblaze.b2.util;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
+import org.threeten.bp.Duration;
+import org.threeten.bp.LocalDateTime;
 
 import static com.backblaze.b2.util.B2DateTimeUtil.getMillisecondsSinceEpoch;
 

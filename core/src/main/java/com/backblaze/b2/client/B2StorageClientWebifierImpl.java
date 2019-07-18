@@ -64,7 +64,9 @@ import com.backblaze.b2.util.B2InputStreamWithByteProgressListener;
 import com.backblaze.b2.util.B2Preconditions;
 
 import java.io.IOException;
-import java.util.Base64;
+import android.util.Base64;
+import android.util.Pair;
+
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -80,7 +82,7 @@ public class B2StorageClientWebifierImpl implements B2StorageClientWebifier {
 
     private final B2WebApiClient webApiClient;
     private final String userAgent;
-    private final Base64.Encoder base64Encoder = Base64.getEncoder();
+    //private final Base64.Encoder base64Encoder = Base64.getEncoder();
 
     // the masterUrl is a url like "https://api.backblazeb2.com/".
     // this url is only used for authorizeAccount.  after that,
@@ -113,9 +115,11 @@ public class B2StorageClientWebifierImpl implements B2StorageClientWebifier {
     // traditional ascii control characters, including \r and \n since they
     // could mess up our HTTP headers.
     private static void throwIfBadUserAgent(String userAgent) {
-        userAgent.chars().forEach( c -> B2Preconditions.checkArgument(c >= 32, "control character in user-agent!"));
+        // userAgent.chars().forEach( c -> B2Preconditions.checkArgument(c >= 32, "control character in user-agent!"));
+        for (char c : userAgent.toCharArray()) {
+            B2Preconditions.checkArgument(c >= 32, "control character in user-agent!");
+        }
     }
-
     private static class Empty {
         @B2Json.constructor(params = "")
         Empty() {
@@ -150,7 +154,7 @@ public class B2StorageClientWebifierImpl implements B2StorageClientWebifier {
 
     private String makeAuthorizationValue(B2AuthorizeAccountRequest request) {
         final String value = request.getAccountId() + ":" + request.getApplicationKey();
-        return "Basic " + base64Encoder.encodeToString(value.getBytes());
+        return "Basic " + Base64.encodeToString(value.getBytes(), Base64.NO_WRAP);
     }
 
     @Override
@@ -257,7 +261,10 @@ public class B2StorageClientWebifierImpl implements B2StorageClientWebifier {
 
             // add any custom file infos.
             // XXX: really percentEncode the keys?  maybe check for ok characters instead?
-            request.getFileInfo().forEach((k, v) -> headersBuilder.set(B2Headers.FILE_INFO_PREFIX + percentEncode(k), percentEncode(v)));
+            for( Map.Entry<String,String> fileInfo : request.getFileInfo().entrySet()){
+                // request.getFileInfo().forEach((k, v) -> headersBuilder.set(B2Headers.FILE_INFO_PREFIX + percentEncode(k), percentEncode(v)));
+                headersBuilder.set(B2Headers.FILE_INFO_PREFIX + percentEncode(fileInfo.getKey()), percentEncode(fileInfo.getValue()));
+            }
 
             final B2ByteProgressListener progressAdapter = new B2UploadProgressAdapter(uploadListener, 0, 1, 0, contentLen);
             final B2ByteProgressFilteringListener progressListener = new B2ByteProgressFilteringListener(progressAdapter);
@@ -524,10 +531,12 @@ public class B2StorageClientWebifierImpl implements B2StorageClientWebifier {
                 .builder();
         addAuthHeader(builder, accountAuth);
         if (extrasPairsOrNull != null) {
-            extrasPairsOrNull.forEach(builder::set);
+            for (Map.Entry<String, String> entry : extrasPairsOrNull.entrySet()){
+                // extrasPairsOrNull.forEach(builder::set);
+                builder.set(entry.getKey(), entry.getValue());
+            }
         }
         setCommonHeaders(builder);
-
         return builder.build();
     }
 

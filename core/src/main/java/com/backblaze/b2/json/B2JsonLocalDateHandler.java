@@ -9,7 +9,7 @@ import com.backblaze.b2.util.B2DateTimeUtil;
 import com.backblaze.b2.util.B2StringUtil;
 
 import java.io.IOException;
-import java.time.LocalDate;
+import org.threeten.bp.LocalDate;
 
 import static com.backblaze.b2.util.B2DateTimeUtil.MAX_DAY;
 import static com.backblaze.b2.util.B2DateTimeUtil.MAX_MONTH;

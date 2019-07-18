@@ -56,7 +56,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Supplier;
+import com.backblaze.b2.util.B2Supplier;
 
 /**
  * B2StorageClientImpl implements B2StorageClient and it acquires credentials as needed
@@ -68,7 +68,7 @@ import java.util.function.Supplier;
  */
 public class B2StorageClientImpl implements B2StorageClient {
     private final B2StorageClientWebifier webifier;
-    private final Supplier<B2RetryPolicy> retryPolicySupplier;
+    private final B2Supplier<B2RetryPolicy> retryPolicySupplier;
     private final B2Retryer retryer;
 
     private final B2AccountAuthorizationCache accountAuthCache;
@@ -88,7 +88,7 @@ public class B2StorageClientImpl implements B2StorageClient {
      */
     public B2StorageClientImpl(B2StorageClientWebifier webifier,
                                B2ClientConfig config,
-                               Supplier<B2RetryPolicy> retryPolicySupplier) {
+                               B2Supplier<B2RetryPolicy> retryPolicySupplier) {
         this(webifier, config, retryPolicySupplier, new B2Retryer(new B2Sleeper()));
     }
 
@@ -101,7 +101,7 @@ public class B2StorageClientImpl implements B2StorageClient {
      */
     B2StorageClientImpl(B2StorageClientWebifier webifier,
                         B2ClientConfig config,
-                        Supplier<B2RetryPolicy> retryPolicySupplier,
+                        B2Supplier<B2RetryPolicy> retryPolicySupplier,
                         B2Retryer retryer) {
         this.webifier = webifier;
         this.retryPolicySupplier = retryPolicySupplier;

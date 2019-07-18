@@ -6,7 +6,7 @@ package com.backblaze.b2.client;
 
 import com.backblaze.b2.client.exceptions.B2Exception;
 
-import java.util.function.Supplier;
+import com.backblaze.b2.util.B2Supplier;
 
 /**
  * B2DefaultRetryPolicy implements the retry policy described in the B2
@@ -31,7 +31,7 @@ public class B2DefaultRetryPolicy implements B2RetryPolicy {
     /**
      * @return a supplier to create new instances of this class.
      */
-    public static Supplier<B2RetryPolicy> supplier() {
+    public static B2Supplier<B2RetryPolicy> supplier() {
         return B2DefaultRetryPolicy::new;
     }
 

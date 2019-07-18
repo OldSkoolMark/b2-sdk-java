@@ -9,7 +9,7 @@ import com.backblaze.b2.util.B2ClockSim;
 import org.junit.After;
 import org.junit.Test;
 
-import java.time.Duration;
+import org.threeten.bp.Duration;
 
 import static com.backblaze.b2.util.B2DateTimeUtil.parseDateTime;
 import static org.junit.Assert.assertEquals;

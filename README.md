@@ -374,7 +374,7 @@ Here are some things we could do someday, in no particular order:
 
 * provide easy support for resuming iterables.
 
-* maybe make B2Json's method for finding JsonTypeHandlers more flexible.  (probably mostly needed for compatibility with earlier Java 6 and/or 7 which don't have java.time classes and we're not supporting those initially.)
+* maybe make B2Json's method for finding JsonTypeHandlers more flexible.  (probably mostly needed for compatibility with earlier Java 6 and/or 7 which don't have org.threeten.bp.classes and we're not supporting those initially.)
 
 * from [integration checklist][]
   * Parallelizing downloads of large files. (how should we handle

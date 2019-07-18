@@ -7,11 +7,11 @@
 
 package com.backblaze.b2.util;
 
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoField;
+import org.threeten.bp.Duration;
+import org.threeten.bp.LocalDate;
+import org.threeten.bp.LocalDateTime;
+import org.threeten.bp.format.DateTimeParseException;
+import org.threeten.bp.temporal.ChronoField;
 
 public class B2DateTimeUtil {
     static final long ONE_MINUTE_IN_SECONDS = 60;

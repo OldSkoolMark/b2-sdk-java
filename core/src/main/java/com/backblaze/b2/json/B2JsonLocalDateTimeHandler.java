@@ -8,7 +8,7 @@ package com.backblaze.b2.json;
 import com.backblaze.b2.util.B2DateTimeUtil;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
+import org.threeten.bp.LocalDateTime;
 
 public class B2JsonLocalDateTimeHandler implements B2JsonTypeHandler<LocalDateTime> {
 

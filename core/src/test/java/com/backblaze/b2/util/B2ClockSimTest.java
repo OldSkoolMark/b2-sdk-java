@@ -9,7 +9,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.time.Duration;
+import org.threeten.bp.Duration;
 
 import static com.backblaze.b2.util.B2DateTimeUtil.ONE_SECOND_IN_MILLIS;
 import static org.junit.Assert.assertEquals;
