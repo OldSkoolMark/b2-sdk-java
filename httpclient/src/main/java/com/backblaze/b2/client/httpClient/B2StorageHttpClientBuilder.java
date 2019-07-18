@@ -20,7 +20,7 @@ import com.backblaze.b2.client.exceptions.B2Exception;
 import com.backblaze.b2.client.webApiClients.B2WebApiClient;
 import com.backblaze.b2.util.B2Preconditions;
 
-import java.util.function.Supplier;
+import com.backblaze.b2.util.B2Supplier;
 
 public class B2StorageHttpClientBuilder {
 
@@ -28,7 +28,7 @@ public class B2StorageHttpClientBuilder {
     private final B2ClientConfig config;
     private B2WebApiClient webApiClient;
     private com.backblaze.b2.client.httpClient.HttpClientFactory httpClientFactory;
-    private Supplier<B2RetryPolicy> retryPolicySupplier;
+    private B2Supplier<B2RetryPolicy> retryPolicySupplier;
 
     @SuppressWarnings("WeakerAccess")
     public static B2StorageHttpClientBuilder builder(B2ClientConfig config) {
@@ -72,7 +72,7 @@ public class B2StorageHttpClientBuilder {
                 config.getUserAgent() + " " + B2Sdk.getName() + "/" + B2Sdk.getVersion(),
                 (config.getMasterUrl() == null) ? DEFAULT_MASTER_URL : config.getMasterUrl(),
                 config.getTestModeOrNull());
-        final Supplier<B2RetryPolicy> retryPolicySupplier = (this.retryPolicySupplier != null) ?
+        final B2Supplier<B2RetryPolicy> retryPolicySupplier = (this.retryPolicySupplier != null) ?
                 this.retryPolicySupplier :
                 B2DefaultRetryPolicy.supplier();
         return new B2StorageClientImpl(
@@ -95,7 +95,7 @@ public class B2StorageHttpClientBuilder {
     }
 
     @SuppressWarnings("unused")
-    public B2StorageHttpClientBuilder setRetryPolicySupplier(Supplier<B2RetryPolicy> retryPolicySupplier) {
+    public B2StorageHttpClientBuilder setRetryPolicySupplier(B2Supplier<B2RetryPolicy> retryPolicySupplier) {
         this.retryPolicySupplier = retryPolicySupplier;
         return this;
     }

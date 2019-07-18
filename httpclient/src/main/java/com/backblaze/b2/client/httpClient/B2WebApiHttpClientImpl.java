@@ -152,7 +152,9 @@ public class B2WebApiHttpClientImpl implements B2WebApiClient {
             int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode == HttpStatus.SC_OK) {
                 B2HeadersImpl.Builder builder = B2HeadersImpl.builder();
-                Arrays.stream(response.getAllHeaders()).forEach(header -> builder.set(header.getName(), header.getValue()));
+                for (Header header : response.getAllHeaders()) {
+                    builder.set(header.getName(), header.getValue());
+                }
                 return builder.build();
             } else {
                 throw B2Exception.create(null, statusCode, null, "");

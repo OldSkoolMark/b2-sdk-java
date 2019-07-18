@@ -140,7 +140,10 @@ public class B2StartLargeFileRequest {
 
         public Builder setCustomFields(Map<String,String> newFileInfo) {
             B2Preconditions.checkArgumentIsNotNull(newFileInfo, "newFileInfo");
-            newFileInfo.forEach(this::setCustomField);
+            //newFileInfo.forEach(this::setCustomField);
+            for( Map.Entry<String,String> fileInfo : newFileInfo.entrySet()){
+                setCustomField(fileInfo.getKey(), fileInfo.getValue());
+            }
             return this;
         }
 

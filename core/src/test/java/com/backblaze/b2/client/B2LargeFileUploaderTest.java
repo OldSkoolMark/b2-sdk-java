@@ -573,7 +573,11 @@ public class B2LargeFileUploaderTest extends B2BaseTest {
         final ArgumentCaptor<B2UploadPartRequest> uploadPartRequestCaptor = ArgumentCaptor.forClass(B2UploadPartRequest.class);
         verify(webifier, times(expectedUploadPartCount)).uploadPart(anyObject(), uploadPartRequestCaptor.capture());
 
-        final Set<Integer> uploadedPartNumbers = uploadPartRequestCaptor.getAllValues().stream().map(B2UploadPartRequest::getPartNumber).collect(Collectors.toSet());
+        // final Set<Integer> uploadedPartNumbers = uploadPartRequestCaptor.getAllValues().stream().map(B2UploadPartRequest::getPartNumber).collect(Collectors.toSet());
+        final Set<Integer> uploadedPartNumbers = new TreeSet<>();
+        for (B2UploadPartRequest request : uploadPartRequestCaptor.getAllValues()) {
+            uploadedPartNumbers.add(request.getPartNumber());
+        }
         assertEquals(expectedUploadPartCount, uploadedPartNumbers.size());
         assertEquals(B2Collections.unmodifiableSet(expectedUploadPartNumbers), uploadedPartNumbers);
 

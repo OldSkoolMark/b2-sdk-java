@@ -6,6 +6,7 @@ package com.backblaze.b2.client.structures;
 
 import com.backblaze.b2.json.B2Json;
 
+import java.util.Comparator;
 import java.util.Objects;
 
 public class B2Part {
@@ -81,4 +82,13 @@ public class B2Part {
                 ", uploadTimestamp=" + uploadTimestamp +
                 '}';
     }
+
+    public static Comparator<B2Part> partNumberComparator = new Comparator<B2Part> (){
+
+        @Override
+        public int compare(B2Part p1, B2Part p2) {
+            return p1.getPartNumber() - p2.getPartNumber();
+        }
+    };
+
 }
