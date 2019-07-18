@@ -15,39 +15,39 @@ public class DownloadedFilesInfo {
     private Map<String, String> map = new HashMap<>();
 
     private static DownloadedFilesInfo instance = null;
-    public static DownloadedFilesInfo getInstance(Activity activity){
-        instance = instance == null ? new DownloadedFilesInfo(activity) : instance;
+    public static DownloadedFilesInfo getInstance(Context context){
+        instance = instance == null ? new DownloadedFilesInfo(context) : instance;
         return instance;
     }
 
-    public DownloadedFilesInfo(Activity activity){
-        readFromPrefs(activity);
+    public DownloadedFilesInfo(Context context){
+        readFromPrefs(context);
     }
 
-    public synchronized void putPath( Activity activity, String b2FileID, String localPath){
+    public synchronized void putPath( Context context, String b2FileID, String localPath){
         map.put(b2FileID, localPath);
-        writeToPrefs(activity);
+        writeToPrefs(context);
     }
     public synchronized String getPath( String b2FileID){
         return map.get(b2FileID);
     }
 
-    public synchronized void writeToPrefs(Activity activity){
-        SharedPreferences sharedPref = activity.getApplicationContext().getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+    public synchronized void writeToPrefs(Context context){
+        SharedPreferences sharedPref = context.getApplicationContext().getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putString(MAP_PREF, toJson());
         editor.commit();
 
     }
-    public synchronized void readFromPrefs(Activity activity){
-        SharedPreferences sharedPref = activity.getApplicationContext().getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+    public synchronized void readFromPrefs(Context context){
+        SharedPreferences sharedPref = context.getApplicationContext().getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
         String json = sharedPref.getString(MAP_PREF, null);
         fromJson(json);
     }
 
-    public synchronized void removePath(Activity activity, String b2FileID) {
+    public synchronized void removePath(Context context, String b2FileID) {
         map.remove(b2FileID);
-        writeToPrefs(activity);
+        writeToPrefs(context);
     }
 
     private String toJson(){

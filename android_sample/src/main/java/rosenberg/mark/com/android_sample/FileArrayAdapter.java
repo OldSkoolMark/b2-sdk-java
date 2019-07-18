@@ -1,6 +1,7 @@
 package rosenberg.mark.com.android_sample;
 
 import android.app.Activity;
+import android.content.Context;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -75,7 +76,7 @@ public class FileArrayAdapter extends RecyclerView.Adapter<FileArrayAdapter.View
     @Override
     public void onBindViewHolder(@NonNull final ViewHolder holder, final int listPosition) {
         TextView textView = holder.textView;
-        Activity activity = (Activity) textView.getContext();
+        Context activity =  textView.getContext();
         String filename = itemList.get(listPosition).name;
         textView.setText(filename);
         FileItem fileItem = itemList.get(listPosition);

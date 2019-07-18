@@ -4,8 +4,8 @@ android {
     compileSdkVersion 28
 
     compileOptions {
-        sourceCompatibility 1.8
-        targetCompatibility 1.8
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
     defaultConfig {
@@ -31,7 +31,10 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation project(":okhttp") // todo: maven repo
-    implementation 'com.backblaze.b2:b2-sdk-core:2.0.0'
+    implementation project(":core")
+//    implementation 'com.backblaze.b2:b2-sdk-core:3.1.0'
+    api 'com.jakewharton.threetenabp:threetenabp:1.2.1'
+//    implementation 'com.backblaze.b2:b2-sdk-okhttp:3.1.0'
     implementation 'com.google.code.gson:gson:2.8.5'
     implementation 'androidx.appcompat:appcompat:1.0.2'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'

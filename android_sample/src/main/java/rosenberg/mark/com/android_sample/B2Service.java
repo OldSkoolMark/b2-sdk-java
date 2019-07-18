@@ -187,8 +187,9 @@ public class B2Service extends IntentService {
         try (final B2StorageClient client = B2StorageOkHttpClientBuilder.builder(B2_ACCOUNT_ID, B2_APPLICATION_KEY, USER_AGENT).build()) {
             final File localFile = new File(localFilePath);
             final B2ContentSource source  = B2FileContentSource.builder(localFile).build();
-            // remove leading / to make B2 happy
-            final String fileName = localFilePath.startsWith("/") ? localFilePath.substring(1) : localFilePath; // todo: don't store path?
+            // remove path information so the file is visible at the root bucket contents listing screen
+            String fileName = localFilePath.contains("/") ? localFilePath.substring(localFilePath.lastIndexOf("/")) : localFilePath;
+            fileName = fileName.startsWith("/") && fileName.length()>1 ? fileName.substring(1) : "";
             Log.i(TAG,"bucketID: "+bucketID+" filename: "+fileName);
             B2UploadFileRequest request = B2UploadFileRequest
                     .builder(bucketID, fileName, B2ContentTypes.B2_AUTO, source)

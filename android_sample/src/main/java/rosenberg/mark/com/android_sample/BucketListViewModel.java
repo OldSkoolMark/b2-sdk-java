@@ -27,8 +27,8 @@ public class BucketListViewModel extends ViewModel {
                              = B2StorageOkHttpClientBuilder.builder(B2Service.B2_ACCOUNT_ID, B2Service.B2_APPLICATION_KEY, B2Service.USER_AGENT)
                         .build()) {
                     bucketList.postValue(client.buckets());
-                } catch (Exception e) {
-                    Log.e(TAG, "B2CreateKey failed: " + e.getMessage());
+                } catch (Throwable e) {
+                    Log.e(TAG, "B2CreateKey failed: " + e.getMessage(), e);
                 } finally {
                     B2ExecutorUtils.shutdownAndAwaitTermination(executor, 10, 10);
                 }
