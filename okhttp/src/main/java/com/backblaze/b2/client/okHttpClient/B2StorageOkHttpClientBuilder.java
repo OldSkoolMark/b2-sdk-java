@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, Backblaze Inc. All Rights Reserved.
+ * Copyright 2019, Backblaze Inc. All Rights Reserved.
  * License https://www.backblaze.com/using_b2_code.html
  */
 package com.backblaze.b2.client.okHttpClient;
@@ -32,9 +32,9 @@ public class B2StorageOkHttpClientBuilder {
     }
 
     @SuppressWarnings("WeakerAccess")
-    public static B2StorageOkHttpClientBuilder builder(String accountId, String applicationKey, String userAgent) {
+    public static B2StorageOkHttpClientBuilder builder(String applicationKeyID, String applicationKey, String userAgent) {
         final B2AccountAuthorizer accountAuthorizer = B2AccountAuthorizerSimpleImpl
-                .builder(accountId, applicationKey)
+                .builder(applicationKeyID, applicationKey)
                 .build();
         final B2ClientConfig config = B2ClientConfig
                 .builder(accountAuthorizer, userAgent)
@@ -46,11 +46,13 @@ public class B2StorageOkHttpClientBuilder {
         this.progressListener = progressListener;
         return this;
     }
+
     private B2StorageOkHttpClientBuilder(B2ClientConfig config) {
         this.config = config;
     }
 
     public B2StorageClient build() {
+
         B2OkHttpClientImpl clientImpl = new B2OkHttpClientImpl();
         if( progressListener != null) {
             clientImpl.setProgressListener(progressListener);

@@ -17,6 +17,8 @@ import com.backblaze.b2.client.structures.B2AuthorizeAccountRequest;
 import com.backblaze.b2.client.structures.B2Bucket;
 import com.backblaze.b2.client.structures.B2CancelLargeFileRequest;
 import com.backblaze.b2.client.structures.B2CancelLargeFileResponse;
+import com.backblaze.b2.client.structures.B2CopyPartRequest;
+import com.backblaze.b2.client.structures.B2CopyFileRequest;
 import com.backblaze.b2.client.structures.B2CreateBucketRequestReal;
 import com.backblaze.b2.client.structures.B2CreateKeyRequestReal;
 import com.backblaze.b2.client.structures.B2CreatedApplicationKey;
@@ -62,6 +64,7 @@ import com.backblaze.b2.util.B2ByteProgressListener;
 import com.backblaze.b2.util.B2ByteRange;
 import com.backblaze.b2.util.B2InputStreamWithByteProgressListener;
 import com.backblaze.b2.util.B2Preconditions;
+import com.backblaze.b2.util.B2StringUtil;
 
 import java.io.IOException;
 import android.util.Base64;
@@ -153,7 +156,7 @@ public class B2StorageClientWebifierImpl implements B2StorageClientWebifier {
     }
 
     private String makeAuthorizationValue(B2AuthorizeAccountRequest request) {
-        final String value = request.getAccountId() + ":" + request.getApplicationKey();
+        final String value = request.getApplicationKeyId() + ":" + request.getApplicationKey();
         return "Basic " + Base64.encodeToString(value.getBytes(), Base64.NO_WRAP);
     }
 
@@ -294,6 +297,15 @@ public class B2StorageClientWebifierImpl implements B2StorageClientWebifier {
     }
 
     @Override
+    public B2FileVersion copyFile(B2AccountAuthorization accountAuth, B2CopyFileRequest request) throws B2Exception {
+            return webApiClient.postJsonReturnJson(
+                    makeUrl(accountAuth, "b2_copy_file"),
+                    makeHeaders(accountAuth),
+                    request,
+                    B2FileVersion.class);
+    }
+
+    @Override
     public B2Part uploadPart(B2UploadPartUrlResponse uploadPartUrlResponse,
                              B2UploadPartRequest request) throws B2Exception {
         final B2ContentSource source = request.getContentSource();
@@ -319,6 +331,17 @@ public class B2StorageClientWebifierImpl implements B2StorageClientWebifier {
             }
         }
     }
+
+
+    @Override
+    public B2Part copyPart(B2AccountAuthorization accountAuth, B2CopyPartRequest request) throws B2Exception {
+        return webApiClient.postJsonReturnJson(
+                makeUrl(accountAuth, "b2_copy_part"),
+                makeHeaders(accountAuth),
+                request,
+                B2Part.class);
+    }
+
 
     @Override
     public B2ListFileVersionsResponse listFileVersions(B2AccountAuthorization accountAuth,

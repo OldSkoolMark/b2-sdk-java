@@ -15,6 +15,8 @@ import com.backblaze.b2.client.structures.B2AccountAuthorization;
 import com.backblaze.b2.client.structures.B2AuthorizeAccountRequest;
 import com.backblaze.b2.client.structures.B2BucketTypes;
 import com.backblaze.b2.client.structures.B2CancelLargeFileRequest;
+import com.backblaze.b2.client.structures.B2CopyPartRequest;
+import com.backblaze.b2.client.structures.B2CopyFileRequest;
 import com.backblaze.b2.client.structures.B2CreateBucketRequest;
 import com.backblaze.b2.client.structures.B2CreateBucketRequestReal;
 import com.backblaze.b2.client.structures.B2DeleteBucketRequestReal;
@@ -225,11 +227,11 @@ public class B2StorageClientWebifierImplTest extends B2BaseTest {
             return b.toString();
         }
 
-        private String copyToString(InputStream inputStream) {
+        private String copyUtf8ToString(InputStream inputStream) {
             try {
                 final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                 B2IoUtils.copy(inputStream, outputStream);
-                return outputStream.toString();
+                return outputStream.toString(B2StringUtil.UTF8);
             } catch (IOException e) {
                 throw new RuntimeException("unexpected exception: " + e, e);
             }
@@ -249,7 +251,7 @@ public class B2StorageClientWebifierImplTest extends B2BaseTest {
                     "headers:\n" +
                     indent(toString(headersOrNull)) + "\n" +
                     "inputStream:\n" +
-                    indent(copyToString(inputStream)) + "\n" +
+                    indent(copyUtf8ToString(inputStream)) + "\n" +
                     "contentLength:\n" +
                     indent("") + contentLength + "\n" +
                     "responseClass:\n" +
@@ -1159,6 +1161,32 @@ public class B2StorageClientWebifierImplTest extends B2BaseTest {
     }
 
     @Test
+    public void testCopyPart() throws B2Exception {
+        final B2CopyPartRequest request = B2CopyPartRequest
+                .builder(3, fileId(1), fileId(2))
+                .build();
+        webifier.copyPart(ACCOUNT_AUTH, request);
+
+        webApiClient.check("postJsonReturnJson.\n" +
+                "url:\n" +
+                "    apiUrl1/b2api/v2/b2_copy_part\n" +
+                "headers:\n" +
+                "    Authorization: accountToken1\n" +
+                "    User-Agent: SecretAgentMan/3.19.28\n" +
+                "    X-Bz-Test-Mode: force_cap_exceeded\n" +
+                "request:\n" +
+                "    {\n" +
+                "      \"largeFileId\": \"4_zBlah_0000002\",\n" +
+                "      \"partNumber\": 3,\n" +
+                "      \"range\": null,\n" +
+                "      \"sourceFileId\": \"4_zBlah_0000001\"\n" +
+                "    }\n" +
+                "responseClass:\n" +
+                "    B2Part\n"
+        );
+    }
+
+    @Test
     public void testUploadFile() throws B2Exception {
         final B2UploadListener listener = mock(B2UploadListener.class);
 
@@ -1255,6 +1283,41 @@ public class B2StorageClientWebifierImplTest extends B2BaseTest {
         thrown.expect(B2Exception.class);
         thrown.expectMessage("failed to get lastModified from source: java.io.IOException: testing!");
         webifier.uploadFile(uploadUrl, request);
+    }
+
+    @Test
+    public void testCopyFile() throws B2Exception {
+        final B2CopyFileRequest request = B2CopyFileRequest
+                .builder(fileId(1), fileName(2))
+                .setDestinationBucketId(bucketId(3))
+                .setContentType("b2/x-auto")
+                .setMetadataDirective(B2CopyFileRequest.COPY_METADATA_DIRECTIVE)
+                .setRange(B2ByteRange.between(10, 100))
+                .build();
+        webifier.copyFile(ACCOUNT_AUTH, request);
+
+        webApiClient.check("postJsonReturnJson.\n" +
+                "url:\n" +
+                "    apiUrl1/b2api/v2/b2_copy_file\n" +
+                "headers:\n" +
+                "    Authorization: accountToken1\n" +
+                "    User-Agent: SecretAgentMan/3.19.28\n" +
+                "    X-Bz-Test-Mode: force_cap_exceeded\n" +
+                "request:\n" +
+                "    {\n" +
+                "      \"contentType\": \"b2/x-auto\",\n" +
+                "      \"destinationBucketId\": \"bucket3\",\n" +
+                "      \"fileInfo\": null,\n" +
+                "      \"fileName\": \"files/\u81ea\u7531/0002\",\n" +
+                "      \"metadataDirective\": \"COPY\",\n" +
+                "      \"range\": \"bytes=10-100\",\n" +
+                "      \"sourceFileId\": \"4_zBlah_0000001\"\n" +
+                "    }\n" +
+                "responseClass:\n" +
+                "    B2FileVersion\n"
+        );
+
+        checkRequestCategory(OTHER, w -> w.copyFile(ACCOUNT_AUTH, request));
     }
 
     @Test

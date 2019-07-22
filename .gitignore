@@ -4,6 +4,10 @@ build
 core/build/
 httpclient/build/
 samples/build/
+android_sample/build/
 b2-sdk-java.iml
-android_sample.iml
+local.properties
+*.iml
 libs/
+out/
+core/out/

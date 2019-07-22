@@ -6,11 +6,13 @@
 package com.backblaze.b2.client;
 
 import com.backblaze.b2.client.contentHandlers.B2ContentSink;
+import com.backblaze.b2.client.contentSources.B2ContentSource;
 import com.backblaze.b2.client.exceptions.B2Exception;
 import com.backblaze.b2.client.structures.B2AccountAuthorization;
 import com.backblaze.b2.client.structures.B2ApplicationKey;
 import com.backblaze.b2.client.structures.B2Bucket;
 import com.backblaze.b2.client.structures.B2CancelLargeFileRequest;
+import com.backblaze.b2.client.structures.B2CopyFileRequest;
 import com.backblaze.b2.client.structures.B2CreateBucketRequest;
 import com.backblaze.b2.client.structures.B2CreateKeyRequest;
 import com.backblaze.b2.client.structures.B2CreatedApplicationKey;
@@ -38,6 +40,7 @@ import com.backblaze.b2.client.structures.B2ListUnfinishedLargeFilesRequest;
 import com.backblaze.b2.client.structures.B2StartLargeFileRequest;
 import com.backblaze.b2.client.structures.B2UpdateBucketRequest;
 import com.backblaze.b2.client.structures.B2UploadFileRequest;
+import com.backblaze.b2.client.structures.B2UploadListener;
 import com.backblaze.b2.client.structures.B2UploadPartUrlResponse;
 import com.backblaze.b2.client.structures.B2UploadUrlResponse;
 
@@ -212,6 +215,16 @@ public interface B2StorageClient extends Closeable {
     B2FileVersion uploadSmallFile(B2UploadFileRequest request) throws B2Exception;
 
     /**
+     * Makes a copy of a file in the same bucket.
+     * The new file must be smaller than the maximum file size (5 GB).
+     *
+     * @param request describes what file to copy, the range of bytes to copy, and how to handle file metadata.
+     * @return The B2FileVersion of the new file.
+     * @throws B2Exception if there's any trouble.
+     */
+    B2FileVersion copySmallFile(B2CopyFileRequest request) throws B2Exception;
+
+    /**
      * Uploads the specified content as separate parts to form a B2 large file.
      *
      * @param request  describes the content to upload and extra metadata about it.
@@ -223,6 +236,72 @@ public interface B2StorageClient extends Closeable {
      */
     B2FileVersion uploadLargeFile(B2UploadFileRequest request,
                                   ExecutorService executor) throws B2Exception;
+
+    /**
+     * Uploads the specified content source as separate parts to form a B2 large file.
+     *
+     * This method assumes you have already called startLargeFile(). The return value
+     * of that call needs to be passed into this method. However, this method will
+     * currently call finish file.
+     *
+     * XXX: should we switch to letting the caller finish the large file?
+     *
+     * @param fileVersion The B2FileVersion for the large file getting stored.
+     *                    This is the return value of startLargeFile().
+     * @param contentSource The contentSource to upload.
+     * @param uploadListenerOrNull The object that handles upload progress events.
+     *                             This may be null if you do not need to be notified
+     *                             of progress events.
+     * @param executor The executor for uploading parts in parallel. The caller
+     *                 retains ownership of the executor and is responsible for
+     *                 shutting it down.
+     * @return The fileVersion of the large file after it has been finished.
+     * @throws B2Exception If there's trouble.
+     */
+    B2FileVersion storeLargeFileFromLocalContent(
+            B2FileVersion fileVersion,
+            B2ContentSource contentSource,
+            B2UploadListener uploadListenerOrNull,
+            ExecutorService executor) throws B2Exception;
+
+    /**
+     * Stores a large file, where storing each part may involve different behavior
+     * or byte sources.
+     *
+     * For example, this method supports the use case of making a copy of a file
+     * that mostly has not changed, and the user only wishes to upload the parts
+     * that have changed. In this case partStorers would be a mix of
+     * B2CopyingPartStorers and one or more B2UploadingPartStorers.
+     *
+     * Another use case would be reattempting an upload of a large file where some
+     * parts have completed, and some haven't. In this case, partStorers would
+     * be a mix of B2AlreadyStoredPartStorer and B2UploadingPartStorers.
+     *
+     * This method assumes you have already called startLargeFile(). The return value
+     * of that call needs to be passed into this method. However, this method will
+     * currently call finish file. Note that each part, whether copied or uploaded,
+     * is still subject to the minimum part size.
+     *
+     * XXX: should we switch to letting the caller finish the large file?
+     *
+     * @param fileVersion The B2FileVersion for the large file getting stored.
+     *                    This is the return value of startLargeFile().
+     * @param partStorers The list of objects that know how to store the part
+     *                    they are responsible for.
+     * @param uploadListenerOrNull The object that handles upload progress events.
+     *                             This may be null if you do not need to be notified
+     *                             of progress events.
+     * @param executor The executor for uploading parts in parallel. The caller
+     *                 retains ownership of the executor and is responsible for
+     *                 shutting it down.
+     * @return The fileVersion of the large file after it has been finished.
+     * @throws B2Exception If there's trouble.
+     */
+    B2FileVersion storeLargeFile(
+            B2FileVersion fileVersion,
+            List<B2PartStorer> partStorers,
+            B2UploadListener uploadListenerOrNull,
+            ExecutorService executor) throws B2Exception;
 
     /**
      * Verifies that the given fileVersion represents an unfinished large file

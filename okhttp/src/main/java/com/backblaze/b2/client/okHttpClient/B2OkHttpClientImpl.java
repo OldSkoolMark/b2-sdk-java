@@ -1,10 +1,12 @@
 /*
+<<<<<<< HEAD
  * Copyright 2017, Backblaze Inc. All Rights Reserved.
+=======
+ * Copyright 2019, Backblaze Inc. All Rights Reserved.
+>>>>>>> master
  * License https://www.backblaze.com/using_b2_code.html
  */
 package com.backblaze.b2.client.okHttpClient;
-
-import android.util.Log;
 
 import com.backblaze.b2.client.contentHandlers.B2ContentSink;
 import com.backblaze.b2.client.contentSources.B2Headers;
@@ -20,10 +22,11 @@ import com.backblaze.b2.json.B2Json;
 import com.backblaze.b2.json.B2JsonException;
 import com.backblaze.b2.json.B2JsonOptions;
 
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -31,10 +34,12 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.Headers;
@@ -50,6 +55,8 @@ import okio.ForwardingSource;
 import okio.Okio;
 import okio.Source;
 
+import static com.backblaze.b2.util.B2IoUtils.copy;
+
 public class B2OkHttpClientImpl implements B2WebApiClient {
     private static final int DEFAULT_CONNECTION_REQUEST_TIMEOUT_SECONDS = 5;
     private static final int DEFAULT_CONNECT_TIMEOUT_SECONDS = 5;
@@ -59,6 +66,8 @@ public class B2OkHttpClientImpl implements B2WebApiClient {
     private static final int DEFAULT_MAX_CONNECTIONS_PER_ROUTE = 100;
 
     private final static String UTF8 = "UTF-8";
+    private final static String APPLICATION_JSON = "application/json";
+    private final static long HOTSPOT_FUDGE = 5; // hotspot JVM max array index is actually less than max int
 
     private final B2Json bzJson = B2Json.get();
     private OkHttpClient okHttpClient = null;
@@ -196,7 +205,6 @@ public class B2OkHttpClientImpl implements B2WebApiClient {
             return null;
         }
     }
-
     private @Nullable Headers makeOkHeaders( @Nullable B2Headers b2Headers){
         if (b2Headers == null) {
             return null;
@@ -269,15 +277,13 @@ public class B2OkHttpClientImpl implements B2WebApiClient {
                 }
             }
         } catch (IOException e) {
-            translateToB2Exception(e, url);
+            throw translateToB2Exception(e, url);
         }
-        return null;
     }
 
     @Override
     public void close() {
-        // todo: Closing response body streams is handled elsewhere by OkHttp. Do we need anything here?
-        // clientFactory.close();
+        // Closing response body streams is handled elsewhere by OkHttp.
     }
 
     private String postJsonAndReturnString(String url,
@@ -321,23 +327,31 @@ public class B2OkHttpClientImpl implements B2WebApiClient {
      * @return the body of the response.
      * @throws B2Exception if there's any trouble
      */
-    private @Nullable String postAndReturnString(@NotNull String url, @Nullable B2Headers headersOrNull, @NotNull InputStream inputStream, long contentLength)
+    private  String postAndReturnString( String url,  B2Headers headersOrNull,  InputStream inputStream, long contentLength)
             throws B2Exception {
-        byte[] bytes;
+        Response response = null;
+        FileOutputStream outputStream = null;
+        File tempFile = null;
         try {
-            bytes = readFully(inputStream, (int)contentLength);
-        } catch (IOException e) {
-            throw translateToB2Exception(e, url);
-        }
-        RequestBody body = RequestBody.create(MediaType.get("application/json"), bytes);
-        Request.Builder builder = new Request.Builder()
-                .url(url)
-                .post(body);
-        if( headersOrNull != null ){
-            builder.headers(makeOkHeaders(headersOrNull));
-        }
-        Request request = builder.build();
-        try (Response response = okHttpClient.newCall(request).execute()) {
+            RequestBody body;
+            if( contentLength <= Integer.MAX_VALUE-HOTSPOT_FUDGE ){
+                byte[] bytes = readFully(inputStream, (int) contentLength);
+                body = RequestBody.create(MediaType.get(APPLICATION_JSON), bytes);
+            } else {
+                tempFile = File.createTempFile(UUID.randomUUID().toString(), ".tmp");
+                outputStream = new FileOutputStream(tempFile);
+                copy( inputStream, outputStream);
+                outputStream.close();
+                body = RequestBody.create(MediaType.get(APPLICATION_JSON), tempFile);
+            }
+            Request.Builder builder = new Request.Builder()
+                    .url(url)
+                    .post(body);
+            if( headersOrNull != null ){
+                builder.headers(makeOkHeaders(headersOrNull));
+            }
+            Request request = builder.build();
+            response = okHttpClient.newCall(request).execute();
             if (!response.isSuccessful()) {
                 throw extractExceptionFromErrorResponse(response, response.body().string());
             } else {
@@ -348,9 +362,15 @@ public class B2OkHttpClientImpl implements B2WebApiClient {
                 }
             }
         } catch (IOException e) {
-            translateToB2Exception(e, url);
+            throw translateToB2Exception(e, url);
+        } finally {
+            if( tempFile != null ){
+                tempFile.delete();
+            }
+            if( response != null ) {
+                response.close();
+            }
         }
-        return null;
     }
 
     private B2Exception translateToB2Exception(IOException e, String url) {
@@ -419,8 +439,5 @@ public class B2OkHttpClientImpl implements B2WebApiClient {
             throw new RuntimeException("No UTF-8 charset", e);
         }
     }
-
-
-
     private final static String TAG = B2OkHttpClientImpl.class.getSimpleName();
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, Backblaze Inc. All Rights Reserved.
+ * Copyright 2019, Backblaze Inc. All Rights Reserved.
  * License https://www.backblaze.com/using_b2_code.html
  */
 package com.backblaze.b2.client;
@@ -14,6 +14,7 @@ import com.backblaze.b2.client.structures.B2Bucket;
 import com.backblaze.b2.client.structures.B2BucketTypes;
 import com.backblaze.b2.client.structures.B2CancelLargeFileRequest;
 import com.backblaze.b2.client.structures.B2CancelLargeFileResponse;
+import com.backblaze.b2.client.structures.B2CopyFileRequest;
 import com.backblaze.b2.client.structures.B2CreateBucketRequest;
 import com.backblaze.b2.client.structures.B2CreateBucketRequestReal;
 import com.backblaze.b2.client.structures.B2DeleteBucketRequest;
@@ -88,6 +89,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -800,6 +802,20 @@ public class B2StorageClientImplTest extends B2BaseTest {
     }
 
     @Test
+    public void testSmallFileCopy() throws B2Exception {
+        final B2FileVersion fileVersion = makeVersion(2, 2);
+        final B2CopyFileRequest request = B2CopyFileRequest.builder(fileId(1), fileName(2)).build();
+        when(webifier.copyFile(anyObject(), eq(request))).thenReturn(fileVersion);
+
+        assertEquals(fileVersion, client.copySmallFile(request));
+        verify(webifier, times(1)).copyFile(anyObject(), eq(request));
+
+        // for coverage
+        //noinspection ResultOfMethodCallIgnored
+        request.hashCode();
+    }
+
+    @Test
     public void testLargeFileUpload() throws B2Exception, IOException {
         // make a content source that's barely big enough to be a large file.
         final long contentLen = (2 * ACCOUNT_AUTH.getRecommendedPartSize());
@@ -834,6 +850,7 @@ public class B2StorageClientImplTest extends B2BaseTest {
 
         verify(contentSource, times(1)).getContentLength();
         verify(contentSource, times(2)).getSha1OrNull(); // once above while making the startLargeRequest for the mock & once for real
+        verify(contentSource, times(2)).createContentSourceWithRangeOrNull(anyLong(), anyLong()); // once above while making the startLargeRequest for the mock & once for real
         verifyNoMoreInteractions(contentSource); // the webifier is a mock, so it doesn't do normal things
 
 
@@ -918,6 +935,7 @@ public class B2StorageClientImplTest extends B2BaseTest {
 
         verify(contentSource, times(1)).getContentLength();
         verify(contentSource, times(1)).getSha1OrNull();
+        verify(contentSource, times(1)).createContentSourceWithRangeOrNull(anyLong(), anyLong());
         verifyNoMoreInteractions(contentSource); // the webifier is a mock, so it doesn't do normal things
 
         // we should be using the existing largeFile, not starting a new one.

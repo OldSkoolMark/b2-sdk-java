@@ -39,13 +39,12 @@ FEATURES
 
 * The SDK requires Java 8.
 
-* The SDK provides three jars:
+* The SDK provides four jars:
   * **b2-sdk-core** provides almost all of the SDK.  it does not contain the code for making HTTP requests (B2WebApiClient).
-  * **b2-sdk-httpclient** provides an implementation of B2WebApiClient built on Apache Commons HttpClient.  It is separate so that if you provide your own B2WebApiClient, you won't need to pull in HttpClient or its dependencies.**
-  * **b2-sdk-samples** has some samples.
-
-* **NOTE:** The SDK supports the upcoming [Application Keys][] APIs, which have not not been released yet.  If you try to use those APIs before the feature is released, you will get errors. 
-
+  * two jars that provide implementations of B2WebApiClient.  they are separate so that you can use them independently -- or your own B2WebApiClient implementation -- without pulling in the libraries they're built on.
+    * **b2-sdk-httpclient** provides an implementation of B2WebApiClient built on Apache Commons HttpClient.
+    * **b2-sdk-okhttp** provides an implementation of B2WebApiClient built on OkHttp3.  See "OkHttp limitations" below.
+  * **b2-sdk-samples** has some samples. 
 
 SAMPLE
 ======
@@ -57,7 +56,7 @@ SAMPLE
   * To run B2Sample, you will need to add your credentials to your environment
     in these environment variables:
 
-    * B2_ACCOUNT_ID
+    * B2_APPLICATION_KEY_ID
     * B2_APPLICATION_KEY
 
   * Be sure to add the jars to your class path along with their dependencies.  
@@ -74,12 +73,12 @@ HOW TO USE
 
   * Add the jars to your build.  In the following examples, replace N.N.N
     with the version of the sdk you're using:
-    * If you're using gradle, here are the dependency lines to use the sdk:
+    * If you're using gradle, here are the dependency lines to use the sdk with our Apache HttpClient-based B2WebApiClient:
     ```gradle
     compile 'com.backblaze.b2:b2-sdk-core:N.N.N'
     compile 'com.backblaze.b2:b2-sdk-httpclient:N.N.N'
     ```
-    * If you're using maven, here are the dependency tags to use the sdk:
+    * If you're using maven, here are the dependency tags to use the sdk with our Apache Commons HttpClient-based B2WebApiClient:
     ```xml
       <dependency>
         <groupId>com.backblaze.b2</groupId>
@@ -94,22 +93,23 @@ HOW TO USE
         <scope>compile</scope>
       </dependency>
     ```
+    If you want to use our OkHttp-based B2WebApiClient instead, use artifactId 'b2-sdk-okhttp' instead of 'b2-sdk-httpclient'.  See "OkHttp limitations" below.
 
   * create a B2StorageClient.
 
-    * if your code has access to the accountId and applicationKey,
+    * if your code has access to the applicationKeyId and applicationKey,
       here's the simplest way to do it:
 
       ```java
-      B2StorageClient client = B2StorageHttpClientBuilder.builder(accountId,
-                                           applicationKey,
-                                           userAgent).build();
+      B2StorageClient client = B2StorageClientFactory
+                   .createDefaultFactory()
+                   .create(APP_KEY_ID, APP_KEY, USER_AGENT);
       ```
 
     * if you want to get the credentials from the environment,
       as B2Sample does, here's how to create your client:
       ```
-      B2StorageClient client = B2StorageHttpClientBuilder.builder(userAgent).build();
+      B2StorageClient client = B2StorageClientFactory.createDefaultFactory().create(USER_AGENT);
       ```
 
   * There's a very straight-forward mapping from B2 API calls to
@@ -209,9 +209,26 @@ HOW TO USE
     Take a look at the example progress listener in B2Sample.java and run it to
     see an example of the notifications you'll get.
 
+OkHttp Limitations
+===
+
+OkHttp intentionally does not support using Java InputStreams to stream data to servers.  As a result, we have to read all of the data you are uploading into either an array or into a local file before uploading it.  If the content is less than about 2 GB, we read the content into an in-memory array.  If the content is bigger than that, we write the content to a local file and upload it from there.
+
+A side effect of this temporary copying is that the upload progress is currently misleading.  Progress notifications are provided during the copy to the temporary array or file and then the meter stays at 100% while the actual upload occurs.
+
 FAQ
 ===
 
+  * How do I get the accountId?
+  
+    You can use B2StorageClient.getAccountId() to get the accountId.
+    
+    In previous versions of the SDK you were able to get the accountId from 
+    B2AuthorizeAccountRequest.getAccountId() and B2Credentials.getAccountId().
+    Now that the SDK supports B2 Application Keys, those structures
+    no longer always have access to the accountId. The accountId is 
+    always available in the response to b2_authorize_account.
+  
   * Can I add metadata to the files I upload?  How?
 
     You can add some immutable name-value pairs to each file at the time you upload it.
@@ -317,9 +334,11 @@ STRUCTURE
 
 This section is mostly for developers who work on the SDK.
 
+**Layering**
+
 To simplify implementation and testing, the B2StorageClient has three main layers and a few helpers.
 
-The top-most layer consists of the B2StorageClientImpl and the various Request and Response classes.  This layer provides the main interface for developers.  The B2StorageClientImpl is responsible for acquiring account authorizations, upload urls and upload authorizations, as needed.  It is also responsible for retrying operations that fail for retryable reasons.  The B2StorageClientImpl uses a B2Retryer to do the retrying.  An implementation of the B2RetryPolicy controls the number of retries that are attempted and the amount of waiting between attempts; the B2DefaultRetryPolicy follows our recommendations and should be suitable for almost all users.  A few operations are complicated enough that they are handled by a separate class; the most prominent example is the B2LargeFileUploader.
+The top-most layer consists of the [B2StorageClientImpl][] and the various Request and Response classes.  This layer provides the main interface for developers.  The B2StorageClientImpl is responsible for acquiring account authorizations, upload urls and upload authorizations, as needed.  It is also responsible for retrying operations that fail for retryable reasons.  The B2StorageClientImpl uses a [B2Retryer][] to do the retrying.  An implementation of the B2RetryPolicy controls the number of retries that are attempted and the amount of waiting between attempts; the B2DefaultRetryPolicy follows our recommendations and should be suitable for almost all users.  A few operations are complicated enough that they are handled by a separate class; the most prominent example is the B2LargeFileUploader.
 
 The middle layer, consists of the B2StorageClientWebifier.  The webifier's job is to translate logical B2 API calls (such as "list file names", or "upload a file") into the appropriate HTTP requests and to interpret the responses.  The webifier isolates the B2StorageClientImpl from having to do this mapping.  We stub the webifier layer to test B2StorageClientImpl.
 
@@ -327,6 +346,56 @@ The bottom layer is the B2WebApiClient.  It provides a few simple methods, such 
 
 One of the main helpers is our B2Json class.  It uses annotations on class members
 and constructors to convert between Java classes and JSON.
+
+**Caching**
+
+Each B2StorageClientImpl has a [B2AccountAuthorizationCache][] and a
+[B2UploadUrlCache][].
+
+Whenever the SDK needs an account authorization, it gets it from the
+B2AccountAuthorizationCache.  If the cache doesn't have one, it will
+use its B2AccountAuthorizer to get one.  When there's an authorization
+error, the B2Retryer clears the cache so a new authorization will be
+fetched the next time it's needed.
+
+Whenever the SDK needs an upload url it gets one from its
+B2UploadUrlCache, which can hold multiple urls (and upload auth
+tokens) per bucket. When there's no upload url for a given bucket, the
+cache requests one from the B2 service. When the SDK uses one of them,
+it is removed from the cache.  If the upload succeeds, the url is put
+back in the cache for later use.  If the upload fails, the url is not
+put back in the cache, so it will not be reused.  The
+[B2LoadFileUploader][], which encapsulates large file uploads, uses an
+instance of [B2UploadPartUrlCache][] in a similar fashion.
+
+**Retrying**
+
+B2 clients may need to retry operations while using the B2 API.  The
+most common time is when an upload is interrupted and the client needs
+to fetch a new upload URL and try again.  Long-running B2 clients may
+also have their B2 authTokens expire; when that happens, the client
+needs to reauthenticate.  Additionally, network issues between the
+client and the B2 service can cause errors that should be retried.
+Periodically, there are B2 service issues which could result in
+retryable errors.  The SDK handles most of this retrying transparently
+to the client.
+
+For each high-level call, the B2StorageClient uses an instance of
+[B2Retryer][]; each B2Retryer is given a [B2RetryPolicy][] object.  When the
+retrier catches an error, it clears cached authTokens (and upload urls
+are not put back in the upload url cache).  The retryer uses
+information in the error objects to categorize errors as unretryable,
+retryable immediately, or retryable after a delay.  The B2Retryer
+then notifies the B2RetryPolicy what has happened and, for retryable
+errors and takes the policy's guidance about whether to retry and, for
+retries that need a delay, how long to sleep.
+
+SDK users can customize their retry policy by providing a
+B2RetryPolicy factory.  By default, a factory that returns instances
+of [B2DefaultRetryPolicy][] is used. The B2DefaultRetryPolicy implements
+the policy described in the B2 documentation using the retry specified
+in the B2 response or an exponential backoff if none is provided.
+
 
 TESTING
 =======
@@ -447,6 +516,14 @@ In addition to the team at Backblaze, the following people have contributed to t
 [Application Keys]: https://www.backblaze.com/b2/docs/application_keys.html
 [Calling the API]: https://www.backblaze.com/b2/docs/calling.html
 [Apache HttpClient]: https://hc.apache.org/httpcomponents-client-ga/
+[B2StorageClientImpl]: https://github.com/Backblaze/b2-sdk-java/blob/master/core/src/main/java/com/backblaze/b2/client/B2StorageClientImpl.java
+[B2AccountAuthorizationCache]: https://github.com/Backblaze/b2-sdk-java/blob/master/core/src/main/java/com/backblaze/b2/client/B2AccountAuthorizationCache.java
+[B2Retryer]: https://github.com/Backblaze/b2-sdk-java/blob/master/core/src/main/java/com/backblaze/b2/client/B2Retryer.java
+[B2RetryPolicy]: https://github.com/Backblaze/b2-sdk-java/blob/master/core/src/main/java/com/backblaze/b2/client/B2RetryPolicy.java
+[B2LoadFileUploader]: https://github.com/Backblaze/b2-sdk-java/blob/master/core/src/main/java/com/backblaze/b2/client/B2LargeFileUploader.java
+[B2UploadUrlCache]: https://github.com/Backblaze/b2-sdk-java/blob/master/core/src/main/java/com/backblaze/b2/client/B2UploadUrlCache.java
+[B2UploadPartUrlCache]: https://github.com/Backblaze/b2-sdk-java/blob/master/core/src/main/java/com/backblaze/b2/client/B2UploadPartUrlCache.java
+[B2DefaultRetryPolicy]: https://github.com/Backblaze/b2-sdk-java/blob/master/core/src/main/java/com/backblaze/b2/client/B2DefaultRetryPolicy.java
 [B2 Files]: https://www.backblaze.com/b2/docs/files.html
 [javadocs]: https://backblaze.github.io/b2-sdk-java/
 [B2UploadListener]: https://backblaze.github.io/b2-sdk-java/com/backblaze/b2/client/structures/B2UploadListener.html

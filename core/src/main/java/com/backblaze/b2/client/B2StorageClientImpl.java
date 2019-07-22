@@ -12,6 +12,7 @@ import com.backblaze.b2.client.structures.B2AccountAuthorization;
 import com.backblaze.b2.client.structures.B2ApplicationKey;
 import com.backblaze.b2.client.structures.B2Bucket;
 import com.backblaze.b2.client.structures.B2CancelLargeFileRequest;
+import com.backblaze.b2.client.structures.B2CopyFileRequest;
 import com.backblaze.b2.client.structures.B2CreateBucketRequest;
 import com.backblaze.b2.client.structures.B2CreateBucketRequestReal;
 import com.backblaze.b2.client.structures.B2CreateKeyRequest;
@@ -49,6 +50,7 @@ import com.backblaze.b2.client.structures.B2Part;
 import com.backblaze.b2.client.structures.B2StartLargeFileRequest;
 import com.backblaze.b2.client.structures.B2UpdateBucketRequest;
 import com.backblaze.b2.client.structures.B2UploadFileRequest;
+import com.backblaze.b2.client.structures.B2UploadListener;
 import com.backblaze.b2.client.structures.B2UploadPartUrlResponse;
 import com.backblaze.b2.client.structures.B2UploadUrlResponse;
 
@@ -213,12 +215,56 @@ public class B2StorageClientImpl implements B2StorageClient {
     }
 
     @Override
+    public B2FileVersion copySmallFile(B2CopyFileRequest request) throws B2Exception {
+        return retryer.doRetry("b2_copy_file",
+                accountAuthCache,
+                isRetry -> webifier.copyFile(accountAuthCache.get(), request),
+                retryPolicySupplier.get());
+    }
+
+    @Override
     public B2FileVersion uploadLargeFile(B2UploadFileRequest request,
                                          ExecutorService executor) throws B2Exception {
         final long contentLength = getContentLength(request.getContentSource());
         final B2PartSizes partSizes = getPartSizes();
 
         return uploadLargeFileGuts(executor, partSizes, request, contentLength);
+    }
+
+    @Override
+    public B2FileVersion storeLargeFileFromLocalContent(
+            B2FileVersion fileVersion,
+            B2ContentSource contentSource,
+            B2UploadListener uploadListener,
+            ExecutorService executor) throws B2Exception {
+
+        return B2LargeFileStorer.forLocalContent(
+                fileVersion,
+                contentSource,
+                getPartSizes(),
+                accountAuthCache,
+                webifier,
+                retryer,
+                retryPolicySupplier,
+                executor).storeFile(uploadListener);
+    }
+
+    @Override
+    public B2FileVersion storeLargeFile(
+            B2FileVersion fileVersion,
+            List<B2PartStorer> partStorers,
+            B2UploadListener uploadListenerOrNull,
+            ExecutorService executor) throws B2Exception {
+
+        // Instantiate and return the manager.
+        return new B2LargeFileStorer(
+                fileVersion,
+                partStorers,
+                accountAuthCache,
+                webifier,
+                retryer,
+                retryPolicySupplier,
+                executor).storeFile(uploadListenerOrNull);
     }
 
     private B2FileVersion uploadLargeFileGuts(ExecutorService executor,

@@ -178,7 +178,7 @@ public class B2Json {
             B2JsonWriter jsonWriter = new B2JsonWriter(out);
             //noinspection unchecked
             handler.serialize(obj, options, jsonWriter);
-            return out.toString();
+            return out.toString(B2StringUtil.UTF8);
         } catch (IOException e) {
             throw new RuntimeException("IO exception writing to string");
         }
@@ -198,6 +198,27 @@ public class B2Json {
             return get().toJson(obj, options);
         } catch (B2JsonException e) {
             throw new IllegalArgumentException("failed to convert to json: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Parse an assumed JSON string into a defined class.
+     * This throws a RuntimeException instead of a B2JsonException,
+     * so use it carefully.
+     * @param json JSON String to try and parse
+     * @param clazz Class to map the JSON String to.
+     * @param <T> The deserialized object casted to the specific type from clazz
+     * @return the object deserialized from the JSON String
+     */
+    public static <T> T fromJsonOrThrowRuntime(String json, Class<T> clazz) {
+        return fromJsonOrThrowRuntime(json, clazz, B2JsonOptions.DEFAULT);
+    }
+
+    public static <T> T fromJsonOrThrowRuntime(String json, Class<T> clazz, B2JsonOptions options) {
+        try {
+            return get().fromJson(json, clazz, options);
+        } catch (B2JsonException e) {
+            throw new IllegalArgumentException("failed to convert from json: " + e.getMessage(), e);
         }
     }
 
@@ -257,7 +278,7 @@ public class B2Json {
             B2JsonWriter jsonWriter = new B2JsonWriter(out);
             //noinspection unchecked
             handler.serialize(list, options, jsonWriter);
-            return out.toString();
+            return out.toString(B2StringUtil.UTF8);
         } catch (IOException e) {
             throw new RuntimeException("IO exception writing to string");
         }
@@ -495,6 +516,14 @@ public class B2Json {
         int firstVersion();
         int lastVersion();
     }
+
+    /**
+     * Annotation that says this is a sensitive field and should be redacted when outputting
+     * for logging
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.FIELD)
+    public @interface sensitive {}
 
     /**
      * Constructor annotation saying that this is the constructor B2Json
