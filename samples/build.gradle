@@ -11,4 +11,5 @@ apply from: '../common.gradle'
 
 dependencies {
     api project(':httpclient')
+    compile project(path: ':okhttp')
 }

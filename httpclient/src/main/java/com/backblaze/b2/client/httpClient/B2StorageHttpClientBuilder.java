@@ -16,10 +16,8 @@ import com.backblaze.b2.client.B2StorageClientWebifier;
 import com.backblaze.b2.client.B2StorageClientWebifierImpl;
 import com.backblaze.b2.client.credentialsSources.B2Credentials;
 import com.backblaze.b2.client.credentialsSources.B2CredentialsFromEnvironmentSource;
-import com.backblaze.b2.client.exceptions.B2Exception;
 import com.backblaze.b2.client.webApiClients.B2WebApiClient;
 import com.backblaze.b2.util.B2Preconditions;
-
 import com.backblaze.b2.util.B2Supplier;
 
 public class B2StorageHttpClientBuilder {

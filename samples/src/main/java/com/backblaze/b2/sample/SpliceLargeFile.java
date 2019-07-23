@@ -6,9 +6,9 @@ package com.backblaze.b2.sample;
 
 import com.backblaze.b2.client.B2ClientConfig;
 import com.backblaze.b2.client.B2CopyingPartStorer;
-import com.backblaze.b2.client.B2UploadingPartStorer;
 import com.backblaze.b2.client.B2PartStorer;
 import com.backblaze.b2.client.B2StorageClient;
+import com.backblaze.b2.client.B2UploadingPartStorer;
 import com.backblaze.b2.client.contentSources.B2ByteArrayContentSource;
 import com.backblaze.b2.client.exceptions.B2Exception;
 import com.backblaze.b2.client.okHttpClient.B2StorageOkHttpClientBuilder;

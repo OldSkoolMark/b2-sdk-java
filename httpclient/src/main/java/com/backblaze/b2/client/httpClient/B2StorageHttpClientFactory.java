@@ -7,6 +7,7 @@ package com.backblaze.b2.client.webApiHttpClient;
 import com.backblaze.b2.client.B2ClientConfig;
 import com.backblaze.b2.client.B2StorageClient;
 import com.backblaze.b2.client.B2StorageClientFactory;
+import com.backblaze.b2.client.httpClient.B2StorageHttpClientBuilder;
 
 /**
  * Simple factory for the HttpClient-based B2StorageClient.
