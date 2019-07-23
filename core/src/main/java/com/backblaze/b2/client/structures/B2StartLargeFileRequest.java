@@ -4,6 +4,8 @@
  */
 package com.backblaze.b2.client.structures;
 
+import android.os.Build;
+
 import com.backblaze.b2.client.exceptions.B2Exception;
 import com.backblaze.b2.client.exceptions.B2LocalException;
 import com.backblaze.b2.json.B2Json;
@@ -144,9 +146,12 @@ public class B2StartLargeFileRequest {
 
         public Builder setCustomFields(Map<String,String> newFileInfo) {
             B2Preconditions.checkArgumentIsNotNull(newFileInfo, "newFileInfo");
-            //newFileInfo.forEach(this::setCustomField);
-            for( Map.Entry<String,String> fileInfo : newFileInfo.entrySet()){
-                setCustomField(fileInfo.getKey(), fileInfo.getValue());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                newFileInfo.forEach(this::setCustomField);
+            } else {
+                for (Map.Entry<String, String> fileInfo : newFileInfo.entrySet()) {
+                    setCustomField(fileInfo.getKey(), fileInfo.getValue());
+                }
             }
             return this;
         }
