@@ -4,10 +4,6 @@
  */
 package com.backblaze.b2.client;
 
-import android.os.Build;
-
-import com.backblaze.b2.client.structures.B2Part;
-
 import java.util.Comparator;
 import java.util.Objects;
 

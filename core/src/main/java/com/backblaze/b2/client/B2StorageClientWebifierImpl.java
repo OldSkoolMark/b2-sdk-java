@@ -4,6 +4,9 @@
  */
 package com.backblaze.b2.client;
 
+import android.os.Build;
+import android.util.Base64;
+
 import com.backblaze.b2.client.contentHandlers.B2ContentSink;
 import com.backblaze.b2.client.contentSources.B2ContentSource;
 import com.backblaze.b2.client.contentSources.B2Headers;
@@ -17,8 +20,8 @@ import com.backblaze.b2.client.structures.B2AuthorizeAccountRequest;
 import com.backblaze.b2.client.structures.B2Bucket;
 import com.backblaze.b2.client.structures.B2CancelLargeFileRequest;
 import com.backblaze.b2.client.structures.B2CancelLargeFileResponse;
-import com.backblaze.b2.client.structures.B2CopyPartRequest;
 import com.backblaze.b2.client.structures.B2CopyFileRequest;
+import com.backblaze.b2.client.structures.B2CopyPartRequest;
 import com.backblaze.b2.client.structures.B2CreateBucketRequestReal;
 import com.backblaze.b2.client.structures.B2CreateKeyRequestReal;
 import com.backblaze.b2.client.structures.B2CreatedApplicationKey;
@@ -64,12 +67,8 @@ import com.backblaze.b2.util.B2ByteProgressListener;
 import com.backblaze.b2.util.B2ByteRange;
 import com.backblaze.b2.util.B2InputStreamWithByteProgressListener;
 import com.backblaze.b2.util.B2Preconditions;
-import com.backblaze.b2.util.B2StringUtil;
 
 import java.io.IOException;
-import android.util.Base64;
-import android.util.Pair;
-
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -85,7 +84,6 @@ public class B2StorageClientWebifierImpl implements B2StorageClientWebifier {
 
     private final B2WebApiClient webApiClient;
     private final String userAgent;
-    //private final Base64.Encoder base64Encoder = Base64.getEncoder();
 
     // the masterUrl is a url like "https://api.backblazeb2.com/".
     // this url is only used for authorizeAccount.  after that,
@@ -118,9 +116,12 @@ public class B2StorageClientWebifierImpl implements B2StorageClientWebifier {
     // traditional ascii control characters, including \r and \n since they
     // could mess up our HTTP headers.
     private static void throwIfBadUserAgent(String userAgent) {
-        // userAgent.chars().forEach( c -> B2Preconditions.checkArgument(c >= 32, "control character in user-agent!"));
-        for (char c : userAgent.toCharArray()) {
-            B2Preconditions.checkArgument(c >= 32, "control character in user-agent!");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            userAgent.chars().forEach( c -> B2Preconditions.checkArgument(c >= 32, "control character in user-agent!"));
+        } else {
+            for (char c : userAgent.toCharArray()) {
+                B2Preconditions.checkArgument(c >= 32, "control character in user-agent!");
+            }
         }
     }
     private static class Empty {
@@ -264,9 +265,12 @@ public class B2StorageClientWebifierImpl implements B2StorageClientWebifier {
 
             // add any custom file infos.
             // XXX: really percentEncode the keys?  maybe check for ok characters instead?
-            for( Map.Entry<String,String> fileInfo : request.getFileInfo().entrySet()){
-                // request.getFileInfo().forEach((k, v) -> headersBuilder.set(B2Headers.FILE_INFO_PREFIX + percentEncode(k), percentEncode(v)));
-                headersBuilder.set(B2Headers.FILE_INFO_PREFIX + percentEncode(fileInfo.getKey()), percentEncode(fileInfo.getValue()));
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                request.getFileInfo().forEach((k, v) -> headersBuilder.set(B2Headers.FILE_INFO_PREFIX + percentEncode(k), percentEncode(v)));
+            } else {
+                for (Map.Entry<String, String> fileInfo : request.getFileInfo().entrySet()) {
+                    headersBuilder.set(B2Headers.FILE_INFO_PREFIX + percentEncode(fileInfo.getKey()), percentEncode(fileInfo.getValue()));
+                }
             }
 
             final B2ByteProgressListener progressAdapter = new B2UploadProgressAdapter(uploadListener, 0, 1, 0, contentLen);
@@ -554,12 +558,16 @@ public class B2StorageClientWebifierImpl implements B2StorageClientWebifier {
                 .builder();
         addAuthHeader(builder, accountAuth);
         if (extrasPairsOrNull != null) {
-            for (Map.Entry<String, String> entry : extrasPairsOrNull.entrySet()){
-                // extrasPairsOrNull.forEach(builder::set);
-                builder.set(entry.getKey(), entry.getValue());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                extrasPairsOrNull.forEach(builder::set);
+            } else {
+                for (Map.Entry<String, String> entry : extrasPairsOrNull.entrySet()) {
+                    builder.set(entry.getKey(), entry.getValue());
+                }
             }
         }
         setCommonHeaders(builder);
+
         return builder.build();
     }
 

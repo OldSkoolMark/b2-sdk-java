@@ -15,6 +15,8 @@ import com.backblaze.b2.client.structures.B2UploadListener;
 import com.backblaze.b2.client.structures.B2UploadPartUrlResponse;
 import com.backblaze.b2.client.structures.B2UploadProgress;
 import com.backblaze.b2.client.structures.B2UploadState;
+import com.backblaze.b2.util.B2Supplier;
+
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,7 +31,6 @@ import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.backblaze.b2.client.B2TestHelpers.fileId;
@@ -71,7 +72,7 @@ public class B2LargeFileStorerTest {
     private final B2StorageClientWebifier webifier = mock(B2StorageClientWebifier.class);
 
     private final B2Retryer retryer = new B2Retryer(mock(B2Sleeper.class));
-    private final Supplier<B2RetryPolicy> retryPolicySupplier = B2DefaultRetryPolicy.supplier();
+    private final B2Supplier<B2RetryPolicy> retryPolicySupplier = B2DefaultRetryPolicy.supplier();
     // Use an executor that has a predictable order of events.
     private final ExecutorService executor = new ExecutorThatUsesMainThread();
 

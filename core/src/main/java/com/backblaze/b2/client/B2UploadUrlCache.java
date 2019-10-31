@@ -96,11 +96,15 @@ class B2UploadUrlCache {
      * @param response the response to return to the cache for later use.
      */
     synchronized void unget(B2UploadUrlResponse response) {
-//        Deque<B2UploadUrlResponse> responses = perBucket.computeIfAbsent(response.getBucketId(), k -> new ArrayDeque<>());
-        Deque<B2UploadUrlResponse> responses = perBucket.get(response.getBucketId());
-        if(responses == null){
-            responses = new ArrayDeque<>();
-            perBucket.put(response.getBucketId(), responses);
+        Deque<B2UploadUrlResponse> responses;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+            responses = perBucket.computeIfAbsent(response.getBucketId(), k -> new ArrayDeque<>());
+        } else {
+            responses = perBucket.get(response.getBucketId());
+            if (responses == null) {
+                responses = new ArrayDeque<>();
+                perBucket.put(response.getBucketId(), responses);
+            }
         }
         responses.offerLast(response);
     }
