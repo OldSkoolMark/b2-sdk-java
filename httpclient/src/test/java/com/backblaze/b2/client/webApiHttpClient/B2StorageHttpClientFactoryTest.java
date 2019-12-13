@@ -4,9 +4,10 @@
  */
 package com.backblaze.b2.client.webApiHttpClient;
 
-import com.backblaze.b2.client.B2StorageClient;
 import com.backblaze.b2.client.B2StorageClientFactory;
 import com.backblaze.b2.client.B2StorageClientFactoryPathBasedImpl;
+import com.backblaze.b2.client.httpClient.B2StorageHttpClientFactory;
+
 import org.junit.Test;
 
 import static org.junit.Assert.assertNotNull;

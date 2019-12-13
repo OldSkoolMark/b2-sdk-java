@@ -198,9 +198,16 @@ public class B2WebApiUrlConnectionClientImpl implements B2WebApiClient {
             // there's an entry with the key null which contains the HTTP response status line!
             final String name = entry.getKey();
             if (name != null) {
-                final StringJoiner joiner = new StringJoiner(",");
-                entry.getValue().forEach(joiner::add);
-                builder.set(name, joiner.toString());
+                List<String> headers = entry.getValue();
+                int remainingHeaders = headers.size();
+                StringBuffer stringBuffer = new StringBuffer();
+                for( String header : headers){
+                    stringBuffer.append(header);
+                    if( remainingHeaders-- > 0){
+                        stringBuffer.append(",");
+                    }
+                }
+                builder.set(name, stringBuffer.toString());
             }
         }
         return builder.build();
