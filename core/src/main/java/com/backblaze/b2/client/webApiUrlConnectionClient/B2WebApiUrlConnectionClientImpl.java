@@ -181,7 +181,7 @@ public class B2WebApiUrlConnectionClientImpl implements B2WebApiClient {
 
         // set some timeouts
         httpCxn.setConnectTimeout(DEFAULT_CONNECT_TIMEOUT_SECONDS * (int) ONE_SECOND_IN_MILLIS);
-        httpCxn.setConnectTimeout(DEFAULT_SOCKET_TIMEOUT_SECONDS * (int) ONE_SECOND_IN_MILLIS);
+        httpCxn.setReadTimeout(DEFAULT_SOCKET_TIMEOUT_SECONDS * (int) ONE_SECOND_IN_MILLIS);
 
 
         // set headers provided by caller.
